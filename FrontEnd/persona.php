@@ -41,9 +41,9 @@
 
 
 <body class="body">
-<!-- FALTA -->
+ <!-- FALTA -->
 
-<aside class="cuerpo-menu-vertical">
+ <aside class="cuerpo-menu-vertical">
         <div>
             <ul class="menu-vertical">
                 <li class="sin-seleccion"><a href="escuela.php">Escuelas</a></li>
@@ -60,16 +60,17 @@
     </aside>
     
     <!-- FALTA -->
+
     <main class="cuerpo">
         <div>
 
-            <div class="title">Escuelas</div>
+            <div class="title">Personas</div>
 
             <br>
 
             <ul class="botones">
                 <li class="boton-volver"><a href="menu_principal.php"><i class="bi bi-arrow-left-circle"></i> Volver</a></li>
-                <li class="boton-agregar"><a href="escuela_agregar.php"><i class="bi bi-plus-circle"></i> Agregar</a></li>
+                <li class="boton-agregar"><a href="persona_agregar.php"><i class="bi bi-plus-circle"></i> Agregar</a></li>
             </ul>
 
 
@@ -78,7 +79,7 @@
             <?php
             $c = 0;
 
-            $sql = "SELECT escuelas_id, escuelas_nombre, escuelas_cue FROM escuelas WHERE escuelas_eliminado='0'";
+            $sql = "SELECT personas_id, personas_dni, personas_apellido, personas_nombre, personas_fechnac, personas_edad, personas_sexo FROM personas WHERE personas_eliminado='0'";
 
             $resul = mysqli_query($conexion, $sql);
 
@@ -87,8 +88,12 @@
                 <table class="table table-striped table-hover" width="100">
                     <tr>
                         <td width="10%"></td>
-                        <td width="60%">ESCUELA</td>
-                        <td width="60%">CUE</td>
+                        <td width="60%">DNI</td>
+                        <td width="60%">APELLIDO</td>
+                        <td width="60%">NOMBRE</td>
+                        <td width="60%">FECHA DE NACIMIENTO</td>
+                        <td width="60%">EDAD</td>
+                        <td width="60%">SEXO</td>
                         <td width="30%">ACCIONES</td>
                     </tr>
 
@@ -109,9 +114,13 @@
                                 <td><?php echo $cont; ?></td>
                                 <td><?php echo $reg[1]; ?></td>
                                 <td><?php echo $reg[2]; ?></td>
+                                <td><?php echo $reg[3]; ?></td>
+                                <td><?php echo $reg[4]; ?></td>
+                                <td><?php echo $reg[5]; ?></td>
+                                <td><?php echo $reg[6]; ?></td>
                                 <td>
-                                    <a href="escuela_editar.php?tipo=1&id=<?php echo $reg[0]; ?>" title="Editar"><i class="bi bi-pencil"></i></a>
-                                    <a href="escuela_eliminar.php?tipo=2&id=<?php echo $reg[0]; ?>" title="Eliminar"><i class="bi bi-trash3" style="color: red;"></i></a>
+                                    <a href="persona_editar.php?tipo=1&id=<?php echo $reg[0]; ?>" title="Editar"><i class="bi bi-pencil"></i></a>
+                                    <a href="persona_eliminar.php?tipo=2&id=<?php echo $reg[0]; ?>" title="Eliminar"><i class="bi bi-trash3" style="color: red;"></i></a>
                                 </td>
                             </tr>
 

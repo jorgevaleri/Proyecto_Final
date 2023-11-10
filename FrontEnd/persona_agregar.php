@@ -38,9 +38,9 @@
 
 
 <body class="body">
-   <!-- FALTA -->
+    <!-- FALTA -->
 
-   <aside class="cuerpo-menu-vertical">
+    <aside class="cuerpo-menu-vertical">
         <div>
             <ul class="menu-vertical">
                 <li class="sin-seleccion"><a href="escuela.php">Escuelas</a></li>
@@ -55,13 +55,13 @@
             </ul>
         </div>
     </aside>
-    
+
     <!-- FALTA -->
 
     <main class="cuerpo">
         <div>
 
-            <div class="title">Agregar Nueva Escuela</div>
+            <div class="title">Agregar Nueva Persona</div>
 
             <br>
 
@@ -70,27 +70,56 @@
             $c = 0;
 
             if (isset($_POST['enviar'])) {
-                $escuelas_id = $_POST['escuelas_id'];
-                $escuelas_nombre = $_POST['escuelas_nombre'];
-                $escuelas_cue = $_POST['escuelas_cue'];
+                $personas_id = $_POST['personas_id'];
+                $personas_dni = $_POST['personas_dni'];
+                $personas_apellido = $_POST['personas_apellido'];
+                $personas_nombre = $_POST['personas_nombre'];
+                $personas_fechnac = $_POST['personas_fechnac'];
+                $personas_edad = $_POST['personas_edad'];
+                $personas_sexo = $_POST['personas_sexo'];
 
-                if (trim($escuelas_nombre) == '') {
+                if (trim($personas_dni) == '') {
                     $c = 1;
-                    $error1 = "Debe ingresar una Escuela";
-                }
-
-                if (trim($escuelas_cue) == '') {
-                    $c = 1;
-                    $error2 = "Debe ingresar un CUE";
+                    $error1 = "Debe ingresar un DNI";
                 } else {
-                    if (!is_numeric($escuelas_cue)) {
+                    if (!is_numeric($personas_dni)) {
                         $c = 1;
-                        $error2 = "Ingrese un valor numerico";
+                        $error1 = "Ingrese un valor numerico";
                     }
                 }
 
+                if (trim($personas_apellido) == '') {
+                    $c = 1;
+                    $error2 = "Debe ingresar un Apellido";
+                }
+
+                if (trim($personas_nombre) == '') {
+                    $c = 1;
+                    $error3 = "Debe ingresar un Nombre";
+                }
+
+                if (trim($personas_fechnac) == '') {
+                    $c = 1;
+                    $error4 = "Debe ingresar una fecha";
+                }
+
+                if (trim($personas_edad) == '') {
+                    $c = 1;
+                    $error5 = "Debe ingresar una Edad";
+                } else {
+                    if (!is_numeric($personas_edad)) {
+                        $c = 1;
+                        $error5 = "Ingrese un valor numerico";
+                    }
+                }
+
+                if (trim($personas_sexo) == '') {
+                    $c = 1;
+                    $error6 = "Debe seleccionar un sexo";
+                }
+
                 if ($c == 0) {
-                    $sql = "INSERT INTO escuelas(escuelas_nombre, escuelas_cue) VALUES ('$escuelas_nombre', '$escuelas_cue')";
+                    $sql = "INSERT INTO personas(personas_dni, personas_apellido, personas_nombre, personas_fechnac, personas_edad, personas_sexo) VALUES ('$personas_dni', '$personas_apellido', '$personas_nombre', '$personas_fechnac', '$personas_edad', '$personas_sexo')";
 
                     $result = mysqli_query($conexion, $sql);
                     if (mysqli_errno($conexion) == 0) {
@@ -99,7 +128,7 @@
 
                         <script>
                             //    alert('Se cargo correctamente los datos ');
-                            location.href = 'escuela.php?id=<?php echo $id; ?>';
+                            location.href = 'persona.php?id=<?php echo $id; ?>';
                         </script>
 
                     <?php
@@ -121,8 +150,8 @@
 
                         <tr>
                             <td height="42">
-                                <p>NOMBRE:
-                                    <input name="escuelas_nombre" type="text" id="escuelas_nombre" value="<?php echo $_POST['escuelas_nombre']; ?>" size="30" maxlength="60">
+                                <p>DNI:
+                                    <input name="personas_dni" type="text" id="personas_dni" value="<?php echo $_POST['personas_dni']; ?>" size="30" maxlength="60">
                                     <?php
 
                                     if (isset($error1)) {
@@ -135,9 +164,9 @@
 
                         <tr>
                             <td height="50">
-                                <p>CUE:
-                                    <label for="escuelas_cue"></label>
-                                    <input name="escuelas_cue" type="text" id="escuelas_cue" size="15" maxlength="20" value="<?php echo $_POST['escuelas_cue']; ?>">
+                                <p>APELLIDO:
+                                    <label for="personas_apellido"></label>
+                                    <input name="personas_apellido" type="text" id="personas_apellido" size="15" maxlength="20" value="<?php echo $_POST['personas_apellido']; ?>">
                                     <?php
 
                                     if (isset($error2)) {
@@ -150,13 +179,75 @@
                         </tr>
 
                         <tr>
+                            <td height="50">
+                                <p>NOMBRE:
+                                    <label for="personas_nombre"></label>
+                                    <input name="personas_nombre" type="text" id="personas_nombre" size="15" maxlength="20" value="<?php echo $_POST['personas_nombre']; ?>">
+                                    <?php
+
+                                    if (isset($error3)) {
+                                        echo $error3;
+                                    }
+
+                                    ?>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td height="47">
+                                <p>FECHA DE NACIMIENTO:
+                                    <input type="date" name="personas_fechnac" id="personas_fechnac" value="<?php echo $_POST['personas_fechnac']; ?>">
+                                    <?php
+
+                                    if (isset($error4)) {
+                                        echo $error4;
+                                    }
+                                    ?>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td height="42">
+                                <p>EDAD:
+                                    <input name="personas_edad" type="text" id="personas_edad" value="<?php echo $_POST['personas_edad']; ?>" size="30" maxlength="60">
+                                    <?php
+
+                                    if (isset($error5)) {
+                                        echo $error5;
+                                    }
+                                    ?>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td height="47">
+                                <p>SEXO: </p>
+                                <select name="personas_sexo">
+                                    <option value="no" selected>Seleccione:</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Femenino">Femenino</option>
+                                </select>
+
+                                <?php
+
+                                if (isset($error6)) {
+                                echo $error6;
+                                }
+                                ?>
+                            </td>
+                        </tr>
+
+                        <tr>
                             <td height="42" align="center">
                                 <p class="boton-agregar">
                                     <input type="submit" name="enviar" id="enviar" value="Agregar">
                                 </p>
 
                                 <p>
-                                    <a href="escuela.php">volver </a>
+                                    <a href="persona.php">volver </a>
                                 </p>
                             </td>
                         </tr>

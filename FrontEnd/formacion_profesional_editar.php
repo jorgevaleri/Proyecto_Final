@@ -38,23 +38,23 @@
 <body class="body">
 	<!-- FALTA -->
 
-	<aside class="cuerpo-menu-vertical">
-		<div>
-			<ul class="menu-vertical">
-				<li><a href="escuela.php">Escuelas</a></li>
-				<br>
-				<li><a href="#">Personas</a></li>
-				<br>
-				<li><a href="formacion_profesional.php">Form. Prof.</a></li>
-				<br>
-				<li><a href="#">Permisos</a></li>
-				<br>
-				<li><a href="#">Auditorias</a></li>
-			</ul>
-		</div>
-	</aside>
-
-	<!-- FALTA -->
+    <aside class="cuerpo-menu-vertical">
+        <div>
+            <ul class="menu-vertical">
+                <li class="sin-seleccion"><a href="escuela.php">Escuelas</a></li>
+                <br>
+                <li class="sin-seleccion"><a href="persona.php">Personas</a></li>
+                <br>
+                <li class="sin-seleccion"><a href="formacion_profesional.php">Form. Prof.</a></li>
+                <br>
+                <li class="sin-seleccion"><a href="#">Permisos</a></li>
+                <br>
+                <li class="sin-seleccion"><a href="#">Auditorias</a></li>
+            </ul>
+        </div>
+    </aside>
+    
+    <!-- FALTA -->
 
 	<main class="cuerpo">
 		<div>
