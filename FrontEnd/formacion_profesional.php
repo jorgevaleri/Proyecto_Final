@@ -80,34 +80,39 @@
 
             ?>
             <div class="contenedor">
-                <table class="table table-hover" width="100">
+                <table class="table table-striped table-hover" width="100">
                     <tr>
-                        <td width="10%">ID </td>
+                        <td width="10%"></td>
                         <td width="60%">FORMACION PROFESIONAL</td>
                         <td width="30%">ACCIONES</td>
                     </tr>
 
-                    <?php
+                    <tbody class="table-group-divider">
+                        <?php
 
-                    $cant = mysqli_num_rows($resul1);
+                        $cant = mysqli_num_rows($resul1);
+                        $cont = 0;
 
-                    for ($i = 0; $i < $cant; $i++) {
-                        $reg = mysqli_fetch_row($resul1);
+                        for ($i = 0; $i < $cant; $i++) {
+                            $reg = mysqli_fetch_row($resul1);
+                            // contador
+                            $cont++;
 
-                    ?>
+                        ?>
 
-                        <tr>
-                            <td><?php echo $reg[0]; ?></td>
-                            <td><?php echo $reg[1]; ?></td>
-                            <td>
-                                <a href="formacion_profesional_modificar.php?tipo=1&id=<?php echo $reg[0]; ?>"><i class="bi bi-pencil"></i></a>
-                                <a href="formacion_profesional_eliminar.php?tipo=2&id=<?php echo $reg[0]; ?>"><i class="bi bi-trash3" style="color: red;"></i></a>
-                            </td>
-                        </tr>
+                            <tr>
+                                <td><?php echo $cont; ?></td>
+                                <td><?php echo $reg[1]; ?></td>
+                                <td>
+                                    <a href="formacion_profesional_editar.php?tipo=1&id=<?php echo $reg[0]; ?>" title="Editar"><i class="bi bi-pencil"></i></a>
+                                    <a href="formacion_profesional_eliminar.php?tipo=2&id=<?php echo $reg[0]; ?>" title="Eliminar"><i class="bi bi-trash3" style="color: red;"></i></a>
+                                </td>
+                            </tr>
 
-                    <?php
-                    }
-                    ?>
+                        <?php
+                        }
+                        ?>
+                    </tbody>
             </div>
             </table>
 

@@ -97,8 +97,8 @@ if(!isset($_POST['ingresar']) or $c!=0){
                 
                 <!-- FALTA -->
                 <div class="sign-up">
-                    <input type="checkbox" value="Recuerdame">
-                    Recuerdame
+                    <input type="checkbox" value="Recordarme">
+                    Recordarme
                 </div>
                 <div class="forgot-pass">
                     <a href="olvide-contraseña.php">Olvide la contraseña</a>

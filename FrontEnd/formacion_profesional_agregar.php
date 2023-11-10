@@ -86,7 +86,7 @@
 				?>
        	     	
 				<script>
-                       alert('Se cargo correctamente los datos ');
+                    //    alert('Se cargo correctamente los datos ');
 					   location.href ='formacion_profesional.php?id=<?php echo $id; ?>';
                 </script>
 
@@ -126,7 +126,7 @@
 
                     <tr>
                         <td height="42" align="center">
-                            <p>
+                            <p class="boton-agregar">
                                 <input type="submit" name="enviar" id="enviar" value="Agregar">
                             </p>
 

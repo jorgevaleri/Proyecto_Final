@@ -140,13 +140,11 @@ nav ul li a:hover{
     background: linear-gradient(135deg, #6E9C3A, #6E9C3A);
 }
 
+/*TABLA*/
 .contenedor{
     margin-left: 5%;
     margin-right: 50%;
 }
-
-
-
 
 .botones li{
     display: flex;
@@ -184,6 +182,33 @@ nav ul li a:hover{
 
 .botones .boton-agregar{
     background-color: #6262AA;
+}
+
+.boton-agregar{
+    text-align: center;
+    width: 230px;
+    height: 35px;   
+    display: block;
+    justify-content: space-around; 
+    border: 1px solid #2e518b;
+    border-radius: 50px;
+    margin-top: 1%;
+    margin-left: 40%;
+    background-color: #6262AA ;
+}
+
+.boton-agregar input{
+    text-decoration: none;
+    font-size: 20px;
+    height: 60px;
+    line-height: 30px;
+    text-align: center;
+    color: #E5EEF9;
+}
+
+.boton-agregar input:hover{
+    color: #6E9C3A;
+    font-weight: bold;
 }
 
 

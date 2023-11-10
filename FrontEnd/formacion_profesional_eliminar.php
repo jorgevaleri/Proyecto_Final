@@ -78,7 +78,7 @@ if(isset($_GET['id'])){
 										
 					?>
 					<script >	
-						alert('Se elimino la Formacion Profesional');
+						// alert('Se elimino la Formacion Profesional');
 						location.href ='formacion_profesional.php';
 	   				</script>	
 					<?php
