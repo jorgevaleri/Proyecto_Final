@@ -41,7 +41,7 @@
 	<aside class="cuerpo-menu-vertical">
 		<div>
 			<ul class="menu-vertical">
-				<li><a href="escuelas.php">Escuelas</a></li>
+				<li><a href="escuela.php">Escuelas</a></li>
 				<br>
 				<li><a href="#">Personas</a></li>
 				<br>

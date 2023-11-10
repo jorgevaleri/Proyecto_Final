@@ -2,196 +2,193 @@
 <html lang="en">
 
 <head>
-    <?php include("../BackEnd/conexion.php"); ?>
+	<?php include("../BackEnd/conexion.php"); ?>
 
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="Imagenes/Logo_2.jpg" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Open+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" href="Imagenes/Logo_2.jpg" type="image/x-icon">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Open+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
 
-    <title>Registro de Asistencia de Alumnos</title>
-    <link rel="stylesheet" href="CSS/fp.css">
+	<title>Registro de Asistencia de Alumnos</title>
+	<link rel="stylesheet" href="CSS/fp.css">
 
 </head>
 
 <header>
-    <div class="ancho">
-        <div class="logo">
-            <a href="#"><img src="Imagenes/Logo_3.png" width="300" height="75"></a>
-        </div>
+	<div class="ancho">
+		<div class="logo">
+			<a href="#"><img src="Imagenes/Logo_3.png" width="300" height="75"></a>
+		</div>
 
-        <nav>
-            <ul>
-                <li><a href="menu_principal.php">Inicio</a></li>
-                <li><a href="perfil.php"><?php echo $_SESSION['personas_nombre']; ?></a></li>
-                <li><a href="deslogeo.php">Cerrar Sesion</a></li>
-            </ul>
-        </nav>
-    </div>
+		<nav>
+			<ul>
+				<li><a href="menu_principal.php">Inicio</a></li>
+				<li><a href="perfil.php"><?php echo $_SESSION['personas_nombre']; ?></a></li>
+				<li><a href="deslogeo.php">Cerrar Sesion</a></li>
+			</ul>
+		</nav>
+	</div>
 </header>
 
 <body class="body">
-    <!-- FALTA -->
+	<!-- FALTA -->
 
-    <aside class="cuerpo-menu-vertical">
-        <div>
-            <ul class="menu-vertical">
-                <li><a href="escuelas.php">Escuelas</a></li>
-                <br>
-                <li><a href="#">Personas</a></li>
-                <br>
-                <li><a href="formacion_profesional.php">Form. Prof.</a></li>
-                <br>
-                <li><a href="#">Permisos</a></li>
-                <br>
-                <li><a href="#">Auditorias</a></li>
-            </ul>
-        </div>
-    </aside>
+	<aside class="cuerpo-menu-vertical">
+		<div>
+			<ul class="menu-vertical">
+				<li><a href="escuela.php">Escuelas</a></li>
+				<br>
+				<li><a href="#">Personas</a></li>
+				<br>
+				<li><a href="formacion_profesional.php">Form. Prof.</a></li>
+				<br>
+				<li><a href="#">Permisos</a></li>
+				<br>
+				<li><a href="#">Auditorias</a></li>
+			</ul>
+		</div>
+	</aside>
 
-    <!-- FALTA -->
+	<!-- FALTA -->
 
-    <main class="cuerpo">
-            <div>
-            <div class="title">Eliminar Formacion Profesional</div>
-            <br>
-            </div>
-    <?php 
-if(isset($_GET['id'])){
-		
-		$id=$_GET['id'];
-		$tipo=$_GET['tipo'];
-	    if(isset($_POST['eliminar'])){
-			$sql="select * from formaciones_profesionales where formaciones_profesionales_id='$id'";
-			$result=mysqli_query($conexion,$sql);
-			$cant=mysqli_num_rows($result);
-			if($cant>0){
-				$reg=mysqli_fetch_row($result);
-				$sql="UPDATE formaciones_profesionales SET formaciones_profesionales_eliminado='1' WHERE formaciones_profesionales_id='$id'";
-				$result=mysqli_query($conexion,$sql);
-				if (mysqli_errno($conexion)==0){
-										
-					?>
-					<script >	
-						// alert('Se elimino la Formacion Profesional');
-						location.href ='formacion_profesional.php';
-	   				</script>	
+	<main class="cuerpo">
+		<div>
+			<div class="title">Eliminar Formacion Profesional</div>
+			<br>
+		</div>
+		<?php
+		if (isset($_GET['id'])) {
+
+			$id = $_GET['id'];
+			$tipo = $_GET['tipo'];
+			if (isset($_POST['eliminar'])) {
+				$sql = "select * from formaciones_profesionales where formaciones_profesionales_id='$id'";
+				$result = mysqli_query($conexion, $sql);
+				$cant = mysqli_num_rows($result);
+				if ($cant > 0) {
+					$reg = mysqli_fetch_row($result);
+					$sql = "UPDATE formaciones_profesionales SET formaciones_profesionales_eliminado='1' WHERE formaciones_profesionales_id='$id'";
+					$result = mysqli_query($conexion, $sql);
+					if (mysqli_errno($conexion) == 0) {
+
+		?>
+						<script>
+							// alert('Se elimino la Formacion Profesional');
+							location.href = 'formacion_profesional.php';
+						</script>
 					<?php
-				}else{
+					} else {
 					?>
-					<script >	
-						alert('Verifique. No se elimino el usuario');
-						location.href ='formacion_profesional.php';
-	   				</script>	
+						<script>
+							alert('Verifique. No se elimino el usuario');
+							location.href = 'formacion_profesional.php';
+						</script>
 					<?php
-				}
-			}else{
+					}
+				} else {
 					?>
-					<script >	
+					<script>
 						alert('No existe el usuario que quiere eliminar');
-						location.href ='formacion_profesional.php';
-	   				</script>	
-					<?php
+						location.href = 'formacion_profesional.php';
+					</script>
+				<?php
+				}
 			}
-		}
-			
-	    if(!isset($_POST['eliminar']))
-        {
-			$sql="SELECT formaciones_profesionales_id, formaciones_profesionales_nombre FROM formaciones_profesionales WHERE formaciones_profesionales_id='$id'";
-			$resul=mysqli_query($conexion,$sql);
-			$cant=mysqli_num_rows($resul);
 
-            if($cant>0)
-            {
-			$row=mysqli_fetch_row($resul);
-			$_POST['formaciones_profesionales_id']=$row[0];
-			$_POST['formaciones_profesionales_nombre']=$row[1];
-			?>
+			if (!isset($_POST['eliminar'])) {
+				$sql = "SELECT formaciones_profesionales_id, formaciones_profesionales_nombre FROM formaciones_profesionales WHERE formaciones_profesionales_id='$id'";
+				$resul = mysqli_query($conexion, $sql);
+				$cant = mysqli_num_rows($resul);
 
-			<form action="formacion_profesional_eliminar.php?tipo=<?php echo $tipo;?>&id=<?php echo $id; ?>" method="post" name="form1" id="form1" enctype="multipart/form-data">
+				if ($cant > 0) {
+					$row = mysqli_fetch_row($resul);
+					$_POST['formaciones_profesionales_id'] = $row[0];
+					$_POST['formaciones_profesionales_nombre'] = $row[1];
+				?>
 
-            
+					<form action="formacion_profesional_eliminar.php?tipo=<?php echo $tipo; ?>&id=<?php echo $id; ?>" method="post" name="form1" id="form1" enctype="multipart/form-data">
 
-            <table>
-                <tr>
-                    <td colspan="2" align="center">
-                </tr>
 
-                <tr>	
-					<td height="42">	
- 						<p>ID: 
-							<input name="formaciones_profesionales_id" type="text" id="formaciones_profesionales_id" value="<?php echo $_POST['formaciones_profesionales_id']; ?>" size="30" maxlength="60">
-  						</p>
-					</td>
-				</tr>
 
-                <tr>	
-					<td height="42">	
- 						<p>FORMACION PROFESIONAL: 
-  							<input name="formaciones_profesionales_nombre" type="text" id="formaciones_profesionales_nombre" value="<?php echo $_POST['formaciones_profesionales_nombre']; ?>" size="30" maxlength="60">
-  						</p>
-					</td>
-				</tr>	
+						<table>
+							<tr>
+								<td colspan="2" align="center">
+							</tr>
 
-                <tr>	
-					<td height="42" align="center">	
-						<p>
-							<input type="submit" name="eliminar" id="eliminar" value="Eliminar">
-						</p>
-				
-						<p>
-							<a href="formacion_profesional.php">volver </a>
-						</p>
-					</td>
-				</tr>
-            </table>
-			</form>
+							<tr>
+								<td height="42">
+									<p>ID:
+										<input name="formaciones_profesionales_id" type="text" id="formaciones_profesionales_id" value="<?php echo $_POST['formaciones_profesionales_id']; ?>" size="30" maxlength="60">
+									</p>
+								</td>
+							</tr>
+
+							<tr>
+								<td height="42">
+									<p>FORMACION PROFESIONAL:
+										<input name="formaciones_profesionales_nombre" type="text" id="formaciones_profesionales_nombre" value="<?php echo $_POST['formaciones_profesionales_nombre']; ?>" size="30" maxlength="60">
+									</p>
+								</td>
+							</tr>
+
+							<tr>
+								<td height="42" align="center">
+									<p>
+										<input type="submit" name="eliminar" id="eliminar" value="Eliminar">
+									</p>
+
+									<p>
+										<a href="formacion_profesional.php">volver </a>
+									</p>
+								</td>
+							</tr>
+						</table>
+					</form>
+				<?php
+
+
+				} else {
+				?>
+					<script>
+						alert('No existe el usuario enviado');
+						location.href = 'usuarios.php';
+					</script>
 			<?php
-			
-			
-		}else{
+
+				}
+			}
+		} else {
 			?>
-			<script >	
-				alert('No existe el usuario enviado');
-				location.href ='usuarios.php';
-	   		</script>	
-			<?php
-			
-		}
-		}
-			
-}else{
-			?>
-			<script >	
+			<script>
 				alert('Ud ingreso mal');
-				location.href ='index.php';
-	   		</script>	
-			<?php
-}
+				location.href = 'index.php';
+			</script>
+		<?php
+		}
 
-?>
-    </main>
+		?>
+	</main>
 </body>
 
 <footer class="pie">
-    <div class="pie_1">
-    </div>
+	<div class="pie_1">
+	</div>
 
-    <section class="pie_iconos">
-        <a href="https://www.facebook.com/jotta.valeri/" class="bi bi-facebook"></a>
-        <a href="https://www.instagram.com/jotta_vs/" class="bi bi-instagram"></a>
-        <a href="https://twitter.com/" class="bi bi-twitter"></a>
-        <a href="https://wa.me/+543834800300" class="bi bi-whatsapp"></a>
-        <a href="https://goo.gl/maps/ZdaDwSRw5DedrJXj6" class="bi bi-geo-alt-fill"></a>
-    </section>
+	<section class="pie_iconos">
+		<a href="https://www.facebook.com/jotta.valeri/" class="bi bi-facebook"></a>
+		<a href="https://www.instagram.com/jotta_vs/" class="bi bi-instagram"></a>
+		<a href="https://twitter.com/" class="bi bi-twitter"></a>
+		<a href="https://wa.me/+543834800300" class="bi bi-whatsapp"></a>
+		<a href="https://goo.gl/maps/ZdaDwSRw5DedrJXj6" class="bi bi-geo-alt-fill"></a>
+	</section>
 
-    <div class="copyright">
-    </div>
+	<div class="copyright">
+	</div>
 </footer>
 
 </html>
