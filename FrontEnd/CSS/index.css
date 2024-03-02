@@ -63,6 +63,7 @@ nav ul li a:hover{
 	grid-template-rows: auto 1fr auto;
     position: relative;
     height: 100%;
+    overflow-y: scroll;
 }
 
 .cuerpo {
@@ -92,106 +93,103 @@ nav ul li a:hover{
     background: linear-gradient(135deg, #6E9C3A, #6E9C3A);
 }
 
+/*TABLAS*/
 .tabla1{
-    border: #E5EEF9 15px solid;
+    border: #E5EEF9 5px solid;
 }
 
-.tabla2{
-    border: #E5EEF9 15px solid;
-}
-
-.tabla1 td{
+.tabla1 th{
     border: rgb(208, 208, 208) 0.5px solid;
-}
-
-.tabla2 td{
-    border: rgb(208, 208, 208) 0.5px solid;
-}
-
-.tabla-encabezado{
     font-weight: bold;
     align-items: center;
     justify-content: center;
     text-align: center;
-    background-color: #F8F9FA;
+    background-color: #87b4e0;
     height: 50px;
 }
 
-.tablatd{
+.tabla1 td{
+    border: rgb(208, 208, 208) 0.5px solid;
     text-align: center;
     font-weight: bold;
     height: 35px; 
     background-color: #fff;
 }
 
-.tablatd input{
+.tabla1 input{
     border: none;
     outline: none;
 }
 
-.tablatd select{
+.tabla1 select{
     border: none;
     outline: none;
 }
 
-.boton-agregar{
+.tabla2{
+    border: #E5EEF9 5px solid;
+}
+
+.tabla2 th{
+    border: rgb(208, 208, 208) 0.5px solid;
+    font-weight: bold;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    width: 250px;
-    height: 35px;   
-    display: block;
-    justify-content: space-around; 
+    background-color: #87b4e0;
+    height: 50px;
+    width: 100px;
+}
+
+.tabla2 td{
+    border: rgb(208, 208, 208) 0.5px solid;
+    text-align: center;
+    font-weight: bold;
+    height: 35px; 
+    background-color: #fff;
+}
+
+.tabla2 input{
+    border: none;
+    outline: none;
+}
+
+
+.id_tabla1 input{
+    border: 1px solid red;
+}
+
+
+/*BOTONES*/
+.botones{
+    margin-right: 51.4%;
+    text-align: center;
+}
+
+.botones input{
+    width: 150px;
+    height: 40px;   
+    margin: 2px;
     border: 1px solid #2e518b;
     border-radius: 50px;
-    margin-top: 8%;
-    margin-left: 18%;
     background-color: #6262AA ;
-}
-
-.boton-agregar a{
-    text-decoration: none;
-    font-size: 20px;
-    height: 60px;
-    line-height: 30px;
-    text-align: center;
     color: #E5EEF9;
+    line-height: 30px;
+    font-size: 20px;
 }
 
-.boton-agregar a:hover{
+.botones input:hover{
     color: #6E9C3A;
     font-weight: bold;
 }
 
-.boton-calcular{
-    text-align: center;
-    width: 135px;
-    height: 35px;   
-    display: flex;
-    justify-content: space-around; 
-    border: 1px solid #2e518b;
-    border-radius: 50px;
-    margin-top: -10%;
-    margin-left: 68%;
-    background-color: #6262AA ;
+.tabla1 button {
+    border: none;
+    background-color: #fff;
 }
 
-.boton-calcular a{
-    text-decoration: none;
-    font-size: 20px;
-    height: 60px;
-    line-height: 30px;
-    text-align: center;
-    color: #E5EEF9;
-}
-
-.boton-calcular a:hover{
-    color: #6E9C3A;
-    font-weight: bold;
-}
-
-
-.anio{
-    margin-bottom: 15px;
-    width: 500px;    
+.tabla1 button:hover {
+    transform: scale(1.2);
 }
 
 
@@ -249,3 +247,54 @@ nav ul li a:hover{
     justify-content: right;
     margin-right: 5px;
 }
+
+/* PAGINA RESPONSIVA
+/* Estilos para pantallas con un ancho máximo de 768px (Tablets y dispositivos móviles en posición horizontal) */
+/* @media only screen and (max-width: 768px) {
+    .cuerpo {
+        padding: 1em;
+    }
+
+    .botones {
+        margin-right: 0;
+        text-align: center;
+    }
+
+    .botones input {
+        width: 100px;
+        height: 30px;
+        margin: 2px;
+        font-size: 14px;
+    }
+} */
+
+/* Estilos para pantallas con un ancho máximo de 768px (Tablets y dispositivos móviles en posición horizontal) */
+/* @media only screen and (max-width: 768px) {
+    .header {
+        padding: 0.5em;
+        text-align: center;
+    }
+    
+    .footer {
+        padding: 0.5em;
+        text-align: center;
+    }
+    
+    table {
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    th, td {
+        text-align: center;
+    }
+    
+    .botones {
+        text-align: center;
+    }
+    
+
+    
+} */
+
