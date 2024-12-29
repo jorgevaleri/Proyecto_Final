@@ -18,22 +18,10 @@
     <link rel="stylesheet" href="CSS/index.css">
 </head>
 
+<!-- HEADER -->
+<?php include('header.php'); ?>
+
 <body class="body">
-    <header>
-        <div class="ancho">
-            <div class="logo">
-                <a href="index.php"><img src="Imagenes/Logo_3.png" width="300" height="75"></a>
-            </div>
-
-            <nav>
-                <ul>
-                    <li><a href="logeo.php">Iniciar Sesion</a></li>
-                    <li><a href="registrarse.php">Registrarse</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
-
     <main class="cuerpo">
         <h3 class="title">Calculadora para Registro de Asistencia</h3>
         <p>En esta pagina usted podra cargar sus alumnos (1 por fila), marcando el sexo y escribiendo el total de Asistencia e Inasistencia, en el cuadro de la derecha lo unico que debemos escribir es la cantidad de dias habiles, de esta forma el programa automaticamente realizara los calculos necesarios.<br>
@@ -111,14 +99,7 @@
     <script src="https://kit.fontawesome.com/73731765b0.js" crossorigin="anonymous"></script>
 </body>
 
-<footer class="pie">
-    <section class="pie_iconos">
-        <a href="https://www.facebook.com/jotta.valeri/" class="bi bi-facebook"></a>
-        <a href="https://www.instagram.com/jotta_vs/" class="bi bi-instagram"></a>
-        <a href="https://twitter.com/" class="fa-brands fa-x-twitter"></a>
-        <a href="https://wa.me/+543834800300" class="bi bi-whatsapp"></a>
-        <a href="https://goo.gl/maps/ZdaDwSRw5DedrJXj6" class="bi bi-geo-alt-fill"></a>
-    </section>
-</footer>
+<!-- FOOTER -->
+<?php include('footer.php'); ?>
 
 </html>

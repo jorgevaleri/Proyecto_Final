@@ -1,323 +1,361 @@
+<?php
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <?php include("../BackEnd/conexion.php"); ?>
 
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Asistencia de Alumnos</title>
-    <link rel="stylesheet" href="CSS/registrarse.css">
+    <title>Registro de Usuario</title>
     <link rel="shortcut icon" href="Imagenes/Logo_2.jpg" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Open+Sans:wght@400;700;800&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-</head>
-<header>
-    <div class="ancho">
-        <div class="logo">
-            <a href="index.php"><img src="Imagenes/Logo_3.png" width="300" height="75"></a>
-        </div>
+    <link rel="stylesheet" href="CSS/registrarse.css">
 
-        <nav>
-            <ul>
-                <li><a href="index.php" class="bi bi-house-door-fill">  Inicio</a></li>
-                <li><a href="logeo.php">Iniciar Session</a></li>
-            </ul>
-        </nav>
-    </div>
-</header>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Estilos de Mapbox -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css" rel="stylesheet" />
+    <!-- Script de Mapbox -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>
+</head>
+
+<!-- HEADER -->
+<?php include('header.php'); ?>
 
 <body class="body">
-    <?php 
-    $c=0;
-	
-	if(isset($_POST['enviar']))
-	{
-		$personas_apellido=strtoupper($_POST['personas_apellido']);
-		$personas_nombre=strtoupper($_POST['personas_nombre']);
-		$personas_dni =$_POST['personas_dni'];
-		$personas_fechnac =$_POST['personas_fechnac'];
-		$sexos_id =$_POST['sexos_id'];		
-		$correos_denominacion =$_POST['correos_denominacion'];
-		$personas_id=$_POST['personas_id'];
-		$correos_id=$_POST['correos_id'];
-		$usuarios_contraseña =$_POST['usuarios_contraseña'];
-		$roles_id=$_POST['roles_id'];
-		$estados_id=$_POST['estados_id'];
-				
-		if(trim($personas_apellido)=='')
-		{
-			$c=1;
-			$error1="Debe ingresar un apellido";
-		}
-		
-		if(trim($personas_nombre)=='')
-		{
-			$c=1;
-			$error2="Debe ingresar un nombre";
-		}
+    <?php
+    $c = 0; // Variable de control de errores
 
-		if(trim($personas_dni)=='')
-		{
-			$c=1;
-			$error3="Debe ingresar un dni";
-		}
-		else
-		{
-			if(!is_numeric($personas_dni))
-			{
-				$c=1;
-				$error3="Ingrese un valor numerico";
-			}
-		}
+    if (isset($_POST['aceptar'])) 
+    {
+        // Datos del formulario
+        $personas_id = $_POST['personas_id'];
+        $personas_cuil = $_POST['personas_cuil'];
+        $personas_apellido = strtoupper($_POST['personas_apellido']);
+        $personas_nombre = strtoupper($_POST['personas_nombre']);
+        $personas_fechnac = $_POST['personas_fechnac'];
+        $usuarios_email = $_POST['usuarios_email'];
+        $usuarios_clave = $_POST['usuarios_clave'];
+        $telefonos_numero = $_POST['telefonos_numero'];
+        $domicilios_calle = $_POST['domicilios_calle'];
+        $domicilios_latitud = $_POST['domicilios_latitud'];
+        $domicilios_longitud = $_POST['domicilios_longitud'];
+        $escuelas_id = $_POST['escuelas_id'];
+        $formaciones_profesionales_id = $_POST['formaciones_profesionales_id'];
+        $tipos_personas = $_POST['tipos_personas'];
+       
+        //VALIDACIONES
+        if (trim($personas_cuil) == '') {
+            $c = 1;
+            $error1 = "Debe ingresar un cuil";
+        } else {
+            if (!is_numeric($personas_cuil)) {
+                $c = 1;
+                $error1 = "Ingrese un valor numerico";
+            }
+        }
 
-		if(trim($personas_fechnac)=='')
-		{
-			$c=1;
-			$error4="Debe ingresar una fecha";
-		}
+        if (trim($personas_apellido) == '') {
+            $c = 1;
+            $error2 = "Debe ingresar un apellido";
+        }
 
-		if(trim($sexos_id)=='')
-		{
-			$c=1;
-			$error5="Debe seleccionar un sexo";
-		}
-		
-			
-			
-		if(trim($correos_denominacion)=='')
-		{
-			$c=1;
-			$error7="Debe ingresar un correo";
-		}
+        if (trim($personas_nombre) == '') {
+            $c = 1;
+            $error3 = "Debe ingresar un nombre";
+        }
 
-		if(trim($usuarios_contraseña)=='')
-		{
-			$c=1;
-			$error8="Debe ingresar una contraseña";
-		}
+        if (trim($personas_fechnac) == '') {
+            $c = 1;
+            $error4 = "Debe ingresar una fecha";
+        }
 
-		if(trim($roles_id)=='')
-		{
-			$c=1;
-			$error9="Debe seleccionar un rol";
-		}
+        if (trim($usuarios_email) == '') {
+            $c = 1;
+            $error5 = "Debe ingresar un correo";
+        }
 
-		if(trim($estados_id)=='')
-		{
-			$c=1;
-			$error10="Debe seleccionar un estado";
-		}
-		
-			
-		if($c==0)
-		{
-			$dato= $_POST['personas_dni'];
-			$sql3="SELECT * FROM personas WHERE personas_dni='$dato'";
-			$verificar_Dato = mysqli_query($conexion, $sql3);
-			$cant=mysqli_num_rows($verificar_Dato);
+        if (trim($usuarios_clave) == '') {
+            $c = 1;
+            $error6 = "Debe ingresar una contraseña";
+        }
 
-			if($cant > 0)
-			{
-				//Existe el dato
-				?>
-				<script>
-					alert('El DNI YA EXISTE');
-					location.href ='usuarios.php';
-				</script>
-				<?php
-			}
-			else
-			{ 
-				$dato2= $_POST['correos_denominacion'];
-				$sql4="SELECT * FROM correos WHERE correos_denominacion='$dato2'";
-				$verificar_Dato = mysqli_query($conexion, $sql4);
-				$cant=mysqli_num_rows($verificar_Dato);
+        if (trim($telefonos_numero) == '') {
+            $c = 1;
+            $error7 = "Debe ingresar un telefono";
+        } else {
+            if (!is_numeric($telefonos_numero)) {
+                $c = 1;
+                $error7 = "Ingrese un valor numerico";
+            }
+        }
 
-				if($cant > 0)
-				{
-					//Existe el dato
-					?>
-					<script>
-						alert('El CORREO YA EXISTE');
-						location.href ='usuarios.php';
-					</script>
-					<?php
-				}
-				else
-				{
-					//No existe el dato
-					
-					$sql_personas="INSERT INTO personas(personas_id, personas_apellido, personas_nombre, personas_dni, personas_fechnac, sexos_id) VALUES ('$personas_id', '$personas_apellido', '$personas_nombre', '$personas_dni', '$personas_fechnac', '$sexos_id')";
-					$result1=mysqli_query($conexion,$sql_personas);
-					$ultimo_id_personas = mysqli_insert_id($conexion);
+        if (trim($domicilios_calle) == '') {
+            $c = 1;
+            $error8 = "Debe ingresar un domicilio";
+        }
 
-					$sql_correos="INSERT INTO correos(correos_denominacion, personas_id) VALUES ('$correos_denominacion', '$ultimo_id_personas')";
-					$result2=mysqli_query($conexion,$sql_correos);
-					$ultimo_id_correos = mysqli_insert_id($conexion);
+        if (trim($escuelas_id) == '') {
+            $c = 1;
+            $error9 = "Debe seleccionar una escuela";
+        }
 
-					$sql_usuarios="INSERT INTO usuarios(correos_id, usuarios_contraseña, personas_id, roles_id, estados_id) VALUES ('$ultimo_id_correos', '$usuarios_contraseña', '$ultimo_id_personas', '$roles_id', '$estados_id')";
-					$result3=mysqli_query($conexion,$sql_usuarios);
+        if (trim($formaciones_profesionales_id) == '') {
+            $c = 1;
+            $error10 = "Debe seleccionar una formacion profesional";
+        }
 
-					?>
-					<script>
-						location.href ='usuarios.php';
-					</script>
-					<?php
-				}
-			}
-		}			
+        if (trim($tipos_personas) == '') {
+            $c = 1;
+            $error11 = "Debe seleccionar un si es Docente o Director";
+        }
 
-		if (mysqli_errno($conexion)==0)
-		{
-			?>
-				
-			<script >	
-				location.href ='usuarios.php';
-			</script>	
 
-			<?php
-					
-		}
-		else
-		{
-			echo "No se Cargo correctamente<br>";
-		}
-					
-		?>				
-		<?php
-	}
+        //INICIO DEL CODIGO AGREGADO//
+        if ($c == 0) 
+        {
+            $sql_personas = "INSERT INTO personas(personas_cuil, personas_apellido, personas_nombre, personas_fechnac) VALUES ('$personas_cuil', '$personas_apellido', '$personas_nombre', '$personas_fechnac')";
+            $result1 = mysqli_query($conexion, $sql_personas);
+            $ultimo_id_personas = mysqli_insert_id($conexion);
+
+            $sql_usuarios = "INSERT INTO usuarios(usuarios_email, usuarios_clave, personas_id) VALUES ('$usuarios_email', '$usuarios_clave', '$ultimo_id_personas')";
+            $result2 = mysqli_query($conexion, $sql_usuarios);
+
+            $sql_telefonos = "INSERT INTO telefonos(telefonos_numero, personas_id) VALUES ('$telefonos_numero', '$ultimo_id_personas')";
+            $result3 = mysqli_query($conexion, $sql_telefonos);
+
+            $sql_domicilios = "INSERT INTO domicilios(domicilios_calle, personas_id) VALUES ('$domicilios_calle', '$ultimo_id_personas')";
+            $result4 = mysqli_query($conexion, $sql_domicilios);
+
+            $sql_es_fp_per = "INSERT INTO es_fp_per(escuelas_id, formaciones_profesionales_id, tipos_personas, personas_id) VALUES ('$escuelas_id', '$formaciones_profesionales_id', '$tipos_personas', '$ultimo_id_personas')";
+            $result5 = mysqli_query($conexion, $sql_es_fp_per);
+
+            if (mysqli_errno($conexion)==0)
+            {
+                ?>
+                <script>
+                alert('Se cargo correctamente los datos');
+                </script>
+                <?php
+            }
+            else
+            {
+                echo "No se Cargo correctamente <br>";
+            }
+        }
+    }
+        
+
+    if (!isset($_POST['aceptar']) or $c != 0) 
+    {
+    ?>
+        <main class="cuerpo">
+            <div class="container">
+                <div class="title">Registro de Usuario</div>
+                <div class="content">
+
+                    <form id="form" name="form" method="post">
+                        <!-- Formulario 1 -->
+                         <h6>Datos de Acceso</h6>
+                        <div class="divider"></div>
+
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Correo Electrónico</span>
+                                    <input type="email" name="usuarios_email" id="usuarios_email" placeholder="Ingrese su correo electrónico" value="<?php echo $_POST['usuarios_email']; ?>">
+                                    <?php
+                                    if (isset($error1)) {
+                                        echo $error1;
+                                    }
+                                    ?>
+                                    <div id="error-correo" class="error-message"></div>
+                                </div>
+                            </div>
+
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Contraseña</span>
+                                    <input type="password" name="usuarios_clave" id="usuarios_clave" placeholder="Ingrese su contraseña" value="<?php echo $_POST['usuarios_clave']; ?>">
+                                    <?php
+                                    if (isset($error2)) {
+                                        echo $error2;
+                                    }
+                                    ?>
+                                    <div id="error-password" class="error-message"></div>
+                                </div>
+
+                                <div class="input-box">
+                                    <span class="details">Repetir Contraseña</span>
+                                    <input type="password" name="password_repetir" placeholder="Repita su contraseña">
+                                    <div id="error-password-repetir" class="error-message"></div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- Formulario 2 -->
+                        <h6>Datos Personales</h6>
+                        <div class="divider"></div>
+
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">CUIL</span>
+                                    <input type="text" name="personas_cuil" id="personas_cuil" placeholder="Ingrese su CUIL" value="<?php echo $_POST['personas_cuil']; ?>">
+                                    <div id="error-cuil" class="error-message"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Apellidos</span>
+                                    <input type="text" name="personas_apellido" id="personas_apellido" placeholder="Ingrese sus Apellidos" value="<?php echo $_POST['personas_apellido']; ?>">
+                                    <div id="error-apellido" class="error-message"></div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Nombres</span>
+                                    <input type="text" name="personas_nombre" id="personas_nombre" placeholder="Ingrese sus Nombres" value="<?php echo $_POST['personas_nombre']; ?>">
+                                    <div id="error-nombre" class="error-message"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Fecha de Nacimiento</span>
+                                    <input type="date" name="personas_fechnac" id="personas_fechnac" value="<?php echo $_POST['personas_fechnac']; ?>">
+                                    <div id="error-fecha" class="error-message"></div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Edad</span>
+                                    <label type="number" name="edad" id="edad" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Dirección</span>
+                                    <input type="text" name="domicilios_calle" id="domicilios_calle" placeholder="Ingrese su Dirección" value="<?php echo $_POST['domicilios_calle']; ?>" required>
+                                    <div id="error-direccion" class="error-message"></div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Teléfono</span>
+                                    <input type="tel" name="telefonos_numero" id="telefonos_numero" placeholder="Ingrese su Teléfono" value="<?php echo $_POST['telefonos_numero']; ?>" required>
+                                    <div id="error-telefono" class="error-message"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Mapa -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Mapa</span>
+                                    <div id="map"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formulario 3 -->
+                        <h6>Datos Institucionales</h6>
+                        <div class="divider"></div>
+
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Escuela</span>
+                                    <select name="escuelas_id" required>
+                                        <option value="">Seleccione una Escuela</option>
+                                        <?php
+                                        $sql_escuelas = "SELECT * FROM escuelas";
+                                        $result_escuelas = mysqli_query($conexion, $sql_escuelas);
+
+                                        while ($row_escuela = mysqli_fetch_assoc($result_escuelas)) {
+                                            $selected = ($row_escuela['escuelas_id'] ==($_POST['escuelas_id']??''))?'selected':'';
+                                            echo '<option value="'.$row_escuela['escuelas_id'].'"'.$selected.'>'.$row_escuela['escuelas_nombre'].'</option>';
+                                        }
+                                        ?>
+                                    </select>
+                                    <!-- PARTE NUEVA -->
+                                    <div id="error-escuela" class="error-message"></div>
+                                    <!-- HASTA AQUI -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Formación Profesional</span>
+                                    <select name="formaciones_profesionales_id" required>
+                                        <option value="">Seleccione una FP</option>
+                                        <?php
+                                        $sql_fp = "SELECT * FROM formaciones_profesionales";
+                                        $result_fp = mysqli_query($conexion, $sql_fp);
+
+                                        while ($row_fp = mysqli_fetch_assoc($result_fp)) {
+                                            $selected = ($row_fp['formaciones_profesionales_id'] ==($_POST['formaciones_profesionales_id']??''))?'selected':'';
+                                            echo '<option value="'.$row_fp['formaciones_profesionales_id'].'"'.$selected.'>'.$row_fp['formaciones_profesionales_nombre'].'</option>';
+                                        }
+
+                                        ?>
+                                    </select>
+                                    <!-- PARTE NUEVA -->
+                                    <div id="error-formacion" class="error-message"></div>
+                                    <!-- HASTA AQUI -->
+                                </div>
+                            </div>
+
+                            <div class="col">
+                                <div class="input-box">
+                                    <span class="details">Tipo</span>
+                                    <select name="tipos_personas" required>
+                                        <option value="">Seleccione una opción</option>
+                                        <option value="Docente">Docente</option>
+                                        <option value="Director">Director</option>
+
+                                    </select>
+                                    <!-- PARTE NUEVA -->
+                                    <div id="error-tipo" class="error-message"></div>
+                                    <!-- HASTA AQUI -->
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="botones">
+                            <button type="submit" name="aceptar" id="aceptar">Aceptar</button>
+                            <button type="submit" name="cancelar">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    <?php
+    }
     ?>
 
+<script src="../BackEnd/registrarse.js"></script>
 
-    <main class="cuerpo">
-        <div class="container">
-            <div class="title">Nuevo Registro</div>
-            <div class="content">
-                <form action="#">
-                    <div class="user-details">
-                        <div class="input-box">
-                            <span class="details">DNI</span>
-                            <input type="text" placeholder="Ingrese su DNI o CUIL" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Apellidos</span>
-                            <input type="text" placeholder="Ingrese su Apellido" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Nombres</span>
-                            <input type="text" placeholder="Ingrese su Nombre" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Fecha de Nacimiento</span>
-                            <input type="date" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Edad</span>
-                            <input type="text" placeholder="Ingrese su Edad" required>
-                        </div>
-                        <div class="select-box">
-                            <span class="details">Sexo</span>
-                            <select name="sexo">
-                                <option value="1">Masculino</option>
-                                <option value="2">Femenino</option>
-                            </select required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Telefono</span>
-                            <input type="text" placeholder="Ingrese su Telefono" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Direccion</span>
-                            <input type="text" placeholder="Ingrese su Direccion" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Localidad</span>
-                            <input type="text" placeholder="Ingrese su Localidad" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Lugar de Nacimiento</span>
-                            <input type="text" placeholder="Ingrese la provincia donde Nacio" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Nacionalidad</span>
-                            <input type="text" placeholder="Ingrese el pais donde Nacio" required>
-                        </div>
-                        <div class="select-box">
-                            <span class="details">Formacion Profesional</span>
-                            <select name="FP">
-                                <option value="1">Informatica</option>
-                                <option value="2">Herreria</option>
-                                <option value="2">Peluqueria</option>
-                                <option value="2">Manualidades</option>
-                                <option value="2">Electricidad</option>
-                            </select>
-                        </div>
-                        <div class="select-box">
-                            <span class="details">Escuelas</span>
-                            <select name="escuela">
-                                <option value="1">EDJA N° 38</option>
-                                <option value="2">EDJA N° 61</option>
-                            </select>
-                        </div>
-                        <div class="select-box">
-                            <span class="details">Tipo</span>
-                            <select name="tipo">
-                                <option value="1">Docente</option>
-                                <option value="2">Director</option>
-                            </select required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Correo Electronico</span>
-                            <input type="email" placeholder="Ingrese su correo electronico" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Contraseña</span>
-                            <input type="text" placeholder="Ingrese su contraseña" required>
-                        </div>
-                        <div class="input-box">
-                            <span class="details">Confirmar Contraseña</span>
-                            <input type="text" placeholder="Repita su contraseña" required>
-                        </div>
-                    </div>
-                    
-                    <div class="botones">
-                        <ul >
-                            <li class="button-cancelar">
-                                <a href="index.php">Cancelar</a>
-                            </li>
-
-                            <li class="button-registrarse">
-                                <input onclick="inicio_sesion.php" type="submit" value="Registrarse">
-                            </li>
-                        </ul>   
-                </form>
-            </div>
-        </div>       
-    </main>    
 </body>
 
-<footer class="pie">
-    <div class="pie_1">          
-    </div>
+<!-- FOOTER -->
+ <!-- FOOTER -->
+<?php include('footer.php'); ?>
 
-    <section class="pie_iconos">
-        <a href="https://www.facebook.com/jotta.valeri/" class="bi bi-facebook"></a>
-        <a href="https://www.instagram.com/jotta_vs/" class="bi bi-instagram"></a>
-        <a href="https://twitter.com/" class="bi bi-twitter"></a>
-        <a href="https://wa.me/+543834800300" class="bi bi-whatsapp"></a>
-        <a href="https://goo.gl/maps/ZdaDwSRw5DedrJXj6" class="bi bi-geo-alt-fill"></a>
-    </section>
-
-    <div class="copyright">        
-    </div>          
-</footer>   
 
 </html>
