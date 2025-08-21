@@ -5,14 +5,15 @@ session_name();
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-//
 
+
+//CONFIGURACION DE CONEXION A LA BASE DE DATOS
 $dbhost = "localhost";
 $dbusuario = "root";
 $dbpassword = "";
 $db = "seminario";
 
-//CONECTAR A LA BASE DE DATOS//
+//CONECTAR A LA BASE DE DATOS
 $conexion = mysqli_connect($dbhost, $dbusuario, $dbpassword, $db);
 
 if (!$conexion) {
@@ -22,9 +23,10 @@ if (!$conexion) {
 				location.href ='index.php';
 	   		</script>";
 	exit();
-} else {
-	//LA CONEXION FUE EXITOSA//
-	/*echo "<script >
-			alert('Se conecto correctamente al sistema');
-		</script>";*/
 }
+
+//CONFIGURACION DE HEADERS PARA EVITAR EL ALMACENAMIENTO EN CACHE
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0"); // Deshabilita el caché
+header("Cache-Control: post-check=0, pre-check=0", false); // Compatibilidad
+header("Pragma: no-cache"); // Deshabilita el caché HTTP 1.0
+?>

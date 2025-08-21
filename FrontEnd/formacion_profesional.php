@@ -1,141 +1,239 @@
+<?php
+session_start();
+
+// Evitar que el navegador muestre páginas desde cache después del logout
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+header('Expires: 0');
+
+// Comprobar login: adaptá 'user_id' por la variable de sesión que uses
+if (empty($_SESSION['user_id'])) {
+  header('Location: index.php', true, 303);
+  exit;
+}
+?>
+
+<?php
+  // Activamos buffer para poder usar header() tras includes
+  ob_start();
+
+  include('head.php');
+  include('header.php');
+  include('menu_lateral.php');
+  include('../BackEnd/conexion.php');
+
+  // recoge acción (por defecto: list)
+  $action = $_GET['action'] ?? 'list';
+  $id     = $_GET['id']     ?? null;
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <?php include("../BackEnd/conexion.php"); ?>
-
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="Imagenes/Logo_2.jpg" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Open+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
-
-    <title>Registro de Asistencia de Alumnos</title>
-    <link rel="stylesheet" href="CSS/fp.css">
-
+  <!-- ESTILOS -->
+   <link rel="stylesheet" href="CSS/style_common.css">
+  <link rel="stylesheet" href="CSS/style_app.css">
 </head>
+<body>
+  <main class="fp-page">
+    <?php switch($action):
 
-<header>
-    <div class="ancho">
-        <div class="logo">
-            <a href="#"><img src="Imagenes/Logo_3.png" width="300" height="75"></a>
-        </div>
+      // ────────────────────────────────────────────
+      case 'add':
+      // ────────────────────────────────────────────
+        if($_SERVER['REQUEST_METHOD']==='POST'){
+          $nombre = trim($_POST['formaciones_profesionales_nombre']);
+          if($nombre !== ''){
+            mysqli_query($conexion,
+              "INSERT INTO formaciones_profesionales(formaciones_profesionales_nombre)
+               VALUES ('".mysqli_real_escape_string($conexion, $nombre)."')"
+            );
+            header("Location: formacion_profesional.php");
+            exit;
+          } else {
+            $error = 'Debe ingresar un nombre.';
+          }
+        }
+    ?>
+      <h1 class="title">Agregar Formación Profesional</h1>
+      <?php if(!empty($error)): ?>
+        <p class="error"><?= $error ?></p>
+      <?php endif ?>
 
-        <nav>
-            <ul>
-                <li><a href="menu_principal.php">Inicio</a></li>
-                <li><a href="perfil.php"><?php echo $_SESSION['personas_nombre']; ?></a></li>
-                <li><a href="deslogeo.php">Cerrar Sesion</a></li>
-            </ul>
-        </nav>
-    </div>
-</header>
+      <form method="post" class="botones">
+        <li class="boton-agregar">
+          <input
+            type="text"
+            name="formaciones_profesionales_nombre"
+            placeholder="Nombre de la formación"
+            style="width:auto;"
+          >
+        </li>
+        <li class="boton-agregar">
+          <button type="submit">Guardar</button>
+        </li>
+        <li class="boton-volver">
+          <a href="formacion_profesional.php">
+            <i class="bi bi-arrow-left-circle"></i> Cancelar
+          </a>
+        </li>
+      </form>
+    <?php
+        break;
 
-<body class="body">
-    <!-- FALTA -->
+      // ────────────────────────────────────────────
+      case 'edit':
+      // ────────────────────────────────────────────
+        if(!$id){
+          header("Location: formacion_profesional.php");
+          exit;
+        }
+        if($_SERVER['REQUEST_METHOD']==='POST'){
+          $nombre = trim($_POST['formaciones_profesionales_nombre']);
+          if($nombre !== ''){
+            mysqli_query($conexion,
+              "UPDATE formaciones_profesionales
+               SET formaciones_profesionales_nombre='"
+               .mysqli_real_escape_string($conexion, $nombre).
+               "' WHERE formaciones_profesionales_id='$id'"
+            );
+            header("Location: formacion_profesional.php");
+            exit;
+          } else {
+            $error = 'Debe ingresar un nombre.';
+          }
+        } else {
+          // precarga
+          $row = mysqli_fetch_assoc(mysqli_query(
+            $conexion,
+            "SELECT formaciones_profesionales_nombre
+             FROM formaciones_profesionales
+             WHERE formaciones_profesionales_id='$id'"
+          ));
+          $_POST['formaciones_profesionales_nombre'] = $row['formaciones_profesionales_nombre'] ?? '';
+        }
+    ?>
+      <h1 class="title">Editar Formación Profesional</h1>
+      <?php if(!empty($error)): ?>
+        <p class="error"><?= $error ?></p>
+      <?php endif ?>
 
-    <aside class="cuerpo-menu-vertical">
-        <div>
-            <ul class="menu-vertical">
-                <li class="sin-seleccion"><a href="escuela.php">Escuelas</a></li>
-                <br>
-                <li class="sin-seleccion"><a href="persona.php">Personas</a></li>
-                <br>
-                <li class="sin-seleccion"><a href="formacion_profesional.php">Form. Prof.</a></li>
-                <br>
-                <li class="sin-seleccion"><a href="#">Permisos</a></li>
-                <br>
-                <li class="sin-seleccion"><a href="#">Auditorias</a></li>
-            </ul>
-        </div>
-    </aside>
-    
-    <!-- FALTA -->
+      <form method="post" class="botones">
+        <li class="boton-agregar">
+          <input
+            type="text"
+            name="formaciones_profesionales_nombre"
+            value="<?= htmlspecialchars($_POST['formaciones_profesionales_nombre']) ?>"
+            style="width:auto;"
+          >
+        </li>
+        <li class="boton-agregar">
+          <button type="submit">Guardar Cambios</button>
+        </li>
+        <li class="boton-volver">
+          <a href="formacion_profesional.php">
+            <i class="bi bi-arrow-left-circle"></i> Cancelar
+          </a>
+        </li>
+      </form>
+    <?php
+        break;
 
-    <main class="cuerpo">
-        <div>
+      // ────────────────────────────────────────────
+      case 'delete':
+      // ────────────────────────────────────────────
+        if(!$id){
+          header("Location: formacion_profesional.php");
+          exit;
+        }
+        // obtenemos el nombre para mostrar en el título
+        $rowDel = mysqli_fetch_assoc(mysqli_query(
+          $conexion,
+          "SELECT formaciones_profesionales_nombre
+           FROM formaciones_profesionales
+           WHERE formaciones_profesionales_id='$id'"
+        ));
+        $nombreDel = $rowDel['formaciones_profesionales_nombre'] ?? '';
+        if($_SERVER['REQUEST_METHOD']==='POST'){
+          mysqli_query($conexion,
+            "UPDATE formaciones_profesionales
+             SET formaciones_profesionales_eliminado='1'
+             WHERE formaciones_profesionales_id='$id'"
+          );
+          header("Location: formacion_profesional.php");
+          exit;
+        }
+    ?>
+      <h1 class="title">
+        Eliminar Formación Profesional de “<?= htmlspecialchars($nombreDel) ?>”
+      </h1>
+      <form method="post" class="botones">
+        <li class="boton-agregar">
+          <button type="submit">Sí, eliminar</button>
+        </li>
+        <li class="boton-volver">
+          <a href="formacion_profesional.php">
+            <i class="bi bi-arrow-left-circle"></i> No, cancelar
+          </a>
+        </li>
+      </form>
+    <?php
+        break;
 
-            <div class="title">Formaciones Profesionales</div>
+      // ────────────────────────────────────────────
+      default:
+      // ────────────────────────────────────────────
+        $res = mysqli_query(
+          $conexion,
+          "SELECT formaciones_profesionales_id,
+                  formaciones_profesionales_nombre
+           FROM formaciones_profesionales
+           WHERE formaciones_profesionales_eliminado='0'"
+        );
+        $counter = 0;
+    ?>
+      <h1 class="title">Formaciones Profesionales</h1>
+      <ul class="botones">
+        <li class="boton-agregar">
+          <a href="formacion_profesional.php?action=add">
+            <i class="bi bi-plus-circle"></i> Agregar
+          </a>
+        </li>
+      </ul>
 
-            <br>
+      <div class="contenedor">
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php while($row = mysqli_fetch_assoc($res)): ?>
+            <tr>
+              <td><?= ++$counter ?></td>
+              <td><?= htmlspecialchars($row['formaciones_profesionales_nombre']) ?></td>
+              <td>
+                <a href="formacion_profesional.php?action=edit&id=<?= $row['formaciones_profesionales_id'] ?>">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="formacion_profesional.php?action=delete&id=<?= $row['formaciones_profesionales_id'] ?>">
+                  <i class="bi bi-trash3" style="color:red;"></i>
+                </a>
+              </td>
+            </tr>
+            <?php endwhile; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php endswitch; ?>
+  </main>
 
-            <ul class="botones">
-                <li class="boton-volver"><a href="menu_principal.php"><i class="bi bi-arrow-left-circle"></i> Volver</a></li>
-                <li class="boton-agregar"><a href="formacion_profesional_agregar.php"><i class="bi bi-plus-circle"></i> Agregar</a></li>
-            </ul>
-
-
-            <br>
-
-            <?php
-            $c = 0;
-
-            $sql1 = "SELECT formaciones_profesionales_id, formaciones_profesionales_nombre FROM formaciones_profesionales WHERE formaciones_profesionales_eliminado='0'";
-
-            $resul1 = mysqli_query($conexion, $sql1);
-
-            ?>
-            <div class="contenedor">
-                <table class="table table-striped table-hover" width="100">
-                    <tr>
-                        <td width="10%"></td>
-                        <td width="60%">FORMACION PROFESIONAL</td>
-                        <td width="30%">ACCIONES</td>
-                    </tr>
-
-                    <tbody class="table-group-divider">
-                        <?php
-
-                        $cant = mysqli_num_rows($resul1);
-                        $cont = 0;
-
-                        for ($i = 0; $i < $cant; $i++) {
-                            $reg = mysqli_fetch_row($resul1);
-                            // contador
-                            $cont++;
-
-                        ?>
-
-                            <tr>
-                                <td><?php echo $cont; ?></td>
-                                <td><?php echo $reg[1]; ?></td>
-                                <td>
-                                    <a href="formacion_profesional_editar.php?tipo=1&id=<?php echo $reg[0]; ?>" title="Editar"><i class="bi bi-pencil"></i></a>
-                                    <a href="formacion_profesional_eliminar.php?tipo=2&id=<?php echo $reg[0]; ?>" title="Eliminar"><i class="bi bi-trash3" style="color: red;"></i></a>
-                                </td>
-                            </tr>
-
-                        <?php
-                        }
-                        ?>
-                    </tbody>
-            </div>
-            </table>
-
-
-        </div>
-
-    </main>
+  <?php include('footer.php'); ?>
 </body>
-
-<footer class="pie">
-    <div class="pie_1">
-    </div>
-
-    <section class="pie_iconos">
-        <a href="https://www.facebook.com/jotta.valeri/" class="bi bi-facebook"></a>
-        <a href="https://www.instagram.com/jotta_vs/" class="bi bi-instagram"></a>
-        <a href="https://twitter.com/" class="bi bi-twitter"></a>
-        <a href="https://wa.me/+543834800300" class="bi bi-whatsapp"></a>
-        <a href="https://goo.gl/maps/ZdaDwSRw5DedrJXj6" class="bi bi-geo-alt-fill"></a>
-    </section>
-
-    <div class="copyright">
-    </div>
-</footer>
-
 </html>
+<?php
+  ob_end_flush();
+?>

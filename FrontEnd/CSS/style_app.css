@@ -1,0 +1,562 @@
+/* ============================================================
+   style_app.css
+   Para páginas de la aplicación (loggeado): MENU LATERAL + HEADER
+   Páginas: menu_principal, escuelas, formacion_profesional, personas,
+           usuarios, registros, perfil, etc.
+   ============================================================ */
+
+/* -------------------------
+   RESET Y BASE (APP)
+   ------------------------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: #E5EEF9;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+/* =========================
+   HEADER (app)
+   - centrado vertical de links / nombre del usuario
+   ========================= */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 75px;
+  background: #141212;
+  z-index: 1000;
+}
+
+header .ancho {
+  max-width: 1200px;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 10px 16px;
+}
+
+header .logo img {
+  max-height: 75px;
+  width: auto;
+}
+
+/* NAV: links centrados verticalmente (y el perfil con nombre + rol) */
+header nav ul {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+header nav li {
+  display: inline-flex;
+  align-items: center;
+}
+
+header nav a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: color .2s;
+}
+
+header nav a:hover {
+  color: #6E9C3A;
+}
+
+/* Perfil en header: nombre (primera línea) y rol (segunda línea pequeña) */
+header .profile-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+  color: #fff;
+  text-decoration: none;
+}
+
+header .profile-link .name {
+  font-weight: 600;
+}
+
+header .profile-link .role {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* =========================
+   MENU LATERAL
+   - sólo para app
+   ========================= */
+.cuerpo-menu-vertical {
+  background-color: #141212;
+  width: 180px;
+  position: fixed;
+  top: 75px;
+  bottom: 0;
+  left: 0;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  z-index: 9;
+}
+
+.menu-interno {
+  flex-grow: 1;
+  padding: 0 10px;
+}
+
+.menu-interno ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-interno ul li {
+  color: white;
+  margin-bottom: 10px;
+}
+
+.menu-interno ul li button {
+  width: 100%;
+  padding: 10px;
+  background: #6E9C3A;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-interno ul li button:hover {
+  background: #5a812d;
+}
+
+button i {
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+/* =========================
+   CONTENEDOR PRINCIPAL (.fp-page)
+   - margen izquierdo para dejar espacio al menu lateral
+   ========================= */
+.fp-page {
+  max-width: 1200px;
+  width: calc(100% - 200px);
+  margin: 100px 100px 2rem 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Título y botones en .fp-page */
+.fp-page .title {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.6rem;
+  font-weight: 500;
+}
+
+.fp-page .botones {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.fp-page .botones li {
+  list-style: none;
+}
+
+.fp-page .botones li a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: .75rem 1.5rem;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.fp-page .botones li a:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+/* Contenedor para tablas dentro de app */
+.fp-page .contenedor {
+  width: 100%;
+  margin: 0;
+}
+
+.fp-page .contenedor table {
+  width: 100% !important;
+}
+
+/* =========================
+   TABLAS (APP)
+   ========================= */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.tabla th,
+.tabla td {
+  border: 1px solid #d0d0d0;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.tabla th {
+  background: #87b4e0;
+  font-weight: 600;
+}
+
+.tabla td {
+  background: #fff;
+}
+
+/* Inputs en tablas (app) */
+.tabla input {
+  width: 80%;
+  padding: 0.2rem;
+  border: none;
+  text-align: center;
+  background: transparent;
+}
+
+/* BOTONES genéricos */
+.btn {
+  text-decoration: none;
+}
+
+.btn.volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: 0.5rem 1rem;
+}
+
+.btn.volver:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+/* =========================
+   REGISTROS (APP) — filtros, tabs, calculadora, resumen
+   ========================= */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.filtros label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+}
+
+.filtros select,
+.filtros input[type="text"] {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+  min-width: 120px;
+}
+
+.filtros button {
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+}
+
+.filtros button:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+.tabs {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tabs a {
+  text-decoration: none;
+  font-weight: 500;
+  color: #333;
+  padding: 0.4rem 0.8rem;
+  border-bottom: 3px solid transparent;
+}
+
+.tabs a.active,
+.tabs a:hover {
+  color: #6E9C3A;
+  border-color: #6E9C3A;
+}
+
+.tabs-form button {
+  background: none;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+/* Resumen tablas layout */
+.resumen-tablas {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: flex-start;
+  padding-bottom: 2rem;
+}
+
+.dos-resumen {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.subtabla-res {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tabla-resumen-1,
+.tabla-resumen-4 {
+  width: auto;
+  table-layout: auto;
+  margin: 0;
+}
+
+/* Forzar tablas lado a lado en resumen */
+.resumen-tablas .tablas-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.resumen-tablas .tablas-container .subtabla {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* =========================
+   CALCULADORA (APP)
+   ========================= */
+.calculadora .tablas-container {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.calculadora .tablas-container>table {
+  flex: 1 1 0;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 200px;
+}
+
+@media (max-width:768px) {
+  .calculadora .tablas-container>table {
+    flex: 1 1 100%;
+  }
+}
+
+.calculadora table th,
+.calculadora table td {
+  border: 1px solid #d0d0d0;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  background-color: #fff;
+  color: #000;
+}
+
+.calculadora table th {
+  background-color: #87b4e0;
+  font-weight: 600;
+}
+
+/* =========================
+   PERFIL (APP)
+   ========================= */
+/* Acciones en perfil encima del contenido */
+.perfil-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin: 12px 0;
+}
+
+.perfil-edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 12px 0 18px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: #0d6efd;
+  color: #fff;
+  border-color: #0d6efd;
+}
+
+.btn-secondary {
+  background: #f8f9fa;
+  color: #212529;
+  border-color: #ced4da;
+}
+
+/* TABLA pequeña dentro de perfil (domicilios/telefonos) */
+.table-small {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.table-small th,
+.table-small td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  font-size: 14px;
+}
+
+/* small notes */
+small.note {
+  color: #666;
+  display: block;
+  margin-top: 6px;
+}
+
+/* =========================
+   TOASTS / NOTIFICACIONES (APP)
+   ========================= */
+#toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  min-width: 240px;
+  max-width: 360px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all .25s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.success {
+  background: #198754;
+}
+
+.toast.error {
+  background: #dc3545;
+}
+
+/* =========================
+   UTILIDADES COMUNES (APP)
+   ========================= */
+.btn-eliminar {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-eliminar i {
+  color: red;
+  font-size: 1.2rem;
+}
+
+/* =========================
+   RESPONSIVE (APP)
+   ========================= */
+@media (max-width: 900px) {
+  .cuerpo-menu-vertical {
+    display: none;
+  }
+
+  /* ocultar menú lateral en pantallas chica */
+  .fp-page {
+    width: calc(100% - 40px);
+    margin: 100px 20px 2rem 20px;
+  }
+
+  /* ajustar */
+  header .ancho {
+    padding: 10px;
+  }
+}

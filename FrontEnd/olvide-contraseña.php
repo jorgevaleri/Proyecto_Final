@@ -1,69 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Asistencia de Alumnos</title>
-    <link rel="stylesheet" href="CSS/inicio_sesion.css">
-    <link rel="shortcut icon" href="Imagenes/Logo_2.jpg" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Open+Sans:wght@400;700;800&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-</head>
-<header>
-    <div class="ancho">
-        <div class="logo">
-            <a href="index.php"><img src="Imagenes/Logo_3.png" width="300" height="75"></a>
-        </div>
 
-        <nav>
-            <ul>
-                <li><a href="index.php" class="bi bi-house-door-fill">  Inicio</a></li>
-                <li><a href="registrarse.php">Registrarse</a></li>
-            </ul>
-        </nav>
+<?php
+// ovide-contraseña.php
+
+// Incluye head.php, que ya arranca session_start() y crea $conexion.
+// También incluye el header de tu plantilla.
+include('head.php');
+include('header.php');
+
+$error   = '';
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sendReset'])) {
+    $email = trim($_POST['email']);
+
+    // 1) Verifica existencia de usuario
+    $stmt = $conexion->prepare("
+      SELECT usuarios_email 
+      FROM usuarios 
+      WHERE usuarios_email = ?
+    ");
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    if ($res->num_rows === 0) {
+        $error = "Ese correo no está registrado.";
+    } else {
+        // 2) Genera token seguro
+        $token   = bin2hex(random_bytes(32));
+        $created = date('Y-m-d H:i:s');
+
+        // 3) Guarda o actualiza en password_resets
+        $stmt = $conexion->prepare("
+          REPLACE INTO password_resets (email, token, created_at)
+          VALUES (?, ?, ?)
+        ");
+        $stmt->bind_param('sss', $email, $token, $created);
+        $stmt->execute();
+
+        // 4) Envía correo de recuperación
+        $resetLink = "https://tu-dominio.com/reset-password.php?"
+                   . "email=" . urlencode($email)
+                   . "&token=" . urlencode($token);
+
+        $asunto  = "Recuperar tu contraseña";
+        $mensaje = "Hola,\n\n"
+                 . "Haz click en este enlace para reestablecer tu contraseña:\n\n"
+                 . $resetLink
+                 . "\n\nSi no solicitaste esto, ignora este correo.";
+        $headers = "From: no-reply@tu-dominio.com\r\n"
+                 . "Content-Type: text/plain; charset=UTF-8\r\n";
+
+        mail($email, $asunto, $mensaje, $headers);
+        $success = "Te hemos enviado un correo con instrucciones.";
+    }
+}
+?>
+
+<!-- Estilos -->
+ <link rel="stylesheet" href="CSS/style_common.css">
+<link rel="stylesheet" href="CSS/style_public.css">
+
+<main class="cuerpo">
+  <div class="reset-container">
+    <h3 class="title">Recuperar contraseña</h3>
+
+    <form method="post" class="reset-form">
+      <div class="field">
+        <input
+          type="email"
+          name="email"
+          id="reset_email"
+          required
+          value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>"
+        >
+        <label for="reset_email">Correo electrónico</label>
+      </div>
+
+      <div class="boton">
+        <input type="submit" class="btn" name="sendReset" value="Enviar enlace">
+      </div>
+
+      <?php if ($error): ?>
+        <div class="message error"><?= htmlspecialchars($error) ?></div>
+      <?php elseif ($success): ?>
+        <div class="message"><?= htmlspecialchars($success) ?></div>
+      <?php endif; ?>
+    </form>
+
+    <div class="back-login">
+      <a href="logeo.php" class="btn">&larr; Volver al inicio de sesión</a>
     </div>
-</header>
+  </div>
+</main>
 
-<body class="body">
-    <main class="cuerpo">
-        <div class="content">
-            <form action="#">
-                <div class="field">
-                    <input type="text" required>
-                    <span class="fas fa-user"></span>
-                    <label>Ingresar su correo electronico</label>
-                </div>
-                                <br>                
-                <button>Enviar</button>
-                
-            </form>
-        </div>        
-    </main>
-
-</body>
-
-<footer class="pie">
-    <div class="pie_1">          
-    </div>
-
-    <section class="pie_iconos">
-        <a href="https://www.facebook.com/jotta.valeri/" class="bi bi-facebook"></a>
-        <a href="https://www.instagram.com/jotta_vs/" class="bi bi-instagram"></a>
-        <a href="https://twitter.com/" class="bi bi-twitter"></a>
-        <a href="https://wa.me/+543834800300" class="bi bi-whatsapp"></a>
-        <a href="https://goo.gl/maps/ZdaDwSRw5DedrJXj6" class="bi bi-geo-alt-fill"></a>
-    </section>
-
-    <div class="copyright">        
-    </div>          
-</footer>   
-
-</html>
+<?php include('footer.php'); ?>

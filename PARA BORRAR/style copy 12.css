@@ -1,0 +1,1385 @@
+/*────────────────────────────────────────────────────────────
+  style.css — Bundle único para Header, Main e Footer
+────────────────────────────────────────────────────────────*/
+
+/* Reset y base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* Body como flex‑container principal */
+body {
+  display: flex;
+  flex-direction: column;
+  background: #E5EEF9;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+/*──────────────────────────────────────────────────────────
+  HEADER
+──────────────────────────────────────────────────────────*/
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 75px;
+  background: #141212;
+  z-index: 1000;
+}
+
+header .ancho {
+  max-width: 1200px;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+}
+
+header .logo img {
+  max-height: 75px;
+  width: auto;
+}
+
+header nav ul {
+  list-style: none;
+}
+
+header nav li {
+  display: inline-block;
+  margin-left: 1rem;
+}
+
+header nav a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: color .2s;
+}
+
+header nav a:hover {
+  color: #6E9C3A;
+}
+
+/* Empuja el contenido para no pisar el header */
+main {
+  flex: 1;
+  margin: 2rem 1.5rem 0;
+  /* 2rem arriba, 1.5rem lados, 0 abajo */
+  margin-top: 100px;
+}
+
+/*──────────────────────────────────────────────────────────
+  MAIN (index.php)
+──────────────────────────────────────────────────────────*/
+main .cuerpo {
+  max-width: 1200px;
+  width: 90%;
+  margin: 0 auto;
+  /* centra horizontamente */
+  padding: 2rem 1.5rem 0;
+  /* 2rem arriba, 1.5rem lados, 0 abajo */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Título principal */
+main .title {
+  font-size: 1.6rem;
+  font-weight: 500;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+main .title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.5rem;
+  height: 4px;
+  border-radius: 2px;
+  background: #6E9C3A;
+}
+
+/* Párrafo explicativo */
+main p {
+  color: #333;
+}
+
+/*──────────────────────────────────────────────────────────
+  BOTONES
+──────────────────────────────────────────────────────────*/
+main .botones {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+main .botones button {
+  /* colores y forma originales */
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color .2s, transform .2s;
+  flex: 1;
+  max-width: 200px;
+}
+
+main .botones button:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+/* Estilo idéntico para los inputs-button */
+main .botones input[type="button"] {
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color .2s, transform .2s;
+  flex: 1;
+  max-width: 200px;
+}
+
+main .botones input[type="button"]:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+/*──────────────────────────────────────────────────────────
+  TABLAS MÁS COMPACTAS, LADO A LADO EN DESKTOP y APILADAS EN MÓVIL
+──────────────────────────────────────────────────────────*/
+/* Contenedor flex de las dos tablas */
+main .tablas-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  /* <-- este es el cambio clave */
+}
+
+/* Cada tabla ocupa siempre la mitad del contenedor */
+.tablas-container .tabla1,
+.tablas-container .tabla2 {
+  flex: 0 0 calc(50% - 1rem);
+  /* 50% menos el gap */
+  max-width: calc(50% - 1rem);
+  width: 100%;
+  /* para que el table-layout: fixed actúe */
+  table-layout: fixed;
+  /* respeta los <col> o anchos de <th> */
+}
+
+/* En desktop cada tabla al 50% */
+@media (min-width: 769px) {
+
+  main .tablas-container .tabla1,
+  main .tablas-container .tabla2 {
+    flex: 0 0 calc(50% - 1rem);
+  }
+}
+
+/* En móvil, apiladas y al 100% */
+@media (max-width: 768px) {
+  main .tablas-container {
+    flex-direction: column;
+  }
+
+  main .tablas-container .tabla1,
+  main .tablas-container .tabla2 {
+    flex: 0 0 100%;
+  }
+}
+
+/* Tablas originales unidas al responsive */
+main .tabla1,
+main .tabla2 {
+  width: 100%;
+  /* ocupa todo el flex item */
+  border: 5px solid #E5EEF9;
+  /* tu borde original */
+  border-collapse: collapse;
+}
+
+/* Encabezados */
+main .tabla1 th,
+main .tabla2 th {
+  border: 0.5px solid rgb(208, 208, 208);
+  text-align: center;
+  font-weight: bold;
+  background-color: #87b4e0;
+  height: 50px;
+}
+
+/* Celdas */
+main .tabla1 td,
+main .tabla2 td {
+  border: 0.5px solid rgb(208, 208, 208);
+  text-align: center;
+  font-weight: bold;
+  background-color: #fff;
+  height: 35px;
+}
+
+/* Inputs y selects dentro de tablas */
+main .tabla1 input,
+main .tabla1 select,
+main .tabla2 input {
+  border: none;
+  outline: none;
+  width: 80%;
+  /* igual que tenías inline */
+  max-width: 80px;
+  text-align: center;
+  padding: 0.2rem;
+  background: transparent;
+}
+
+.tabla1 td:nth-child(2) select {
+  width: 100%;
+  /* ocupa todo el ancho de la celda */
+  max-width: none;
+  /* elimina cualquier limitante previa */
+  box-sizing: border-box;
+  /* incluye padding en el ancho total */
+}
+
+/* 1) Botón “eliminar” sin bordes ni outline */
+.btn-eliminar {
+  border: none;
+  /* quita el borde por defecto */
+  background: none;
+  /* quita fondo */
+  padding: 0;
+  /* elimina espacios extra */
+  cursor: pointer;
+  /* mano al pasar por encima */
+  outline: none;
+  /* quita el contorno al enfocar */
+}
+
+/* 2) Por si aún así se ve outline al hacer click/focus */
+.btn-eliminar:focus {
+  outline: none;
+}
+
+/* 3) Controla el tamaño y color del icono */
+.btn-eliminar .fa-circle-xmark {
+  font-size: 1.25rem;
+  /* 20px aprox. */
+  color: red;
+}
+
+/*──────────────────────────────────────────────────────────
+  FOOTER
+──────────────────────────────────────────────────────────*/
+footer.pie {
+  background: #E5EEF9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 0;
+  margin-top: auto;
+}
+
+footer .pie_iconos {
+  display: flex;
+  gap: 1.5rem;
+}
+
+footer .pie_iconos a {
+  text-decoration: none;
+  font-size: 1.5rem;
+  color: #000;
+  transition: transform .2s, color .2s;
+}
+
+footer .pie_iconos a:hover {
+  color: #6E9C3A;
+  transform: scale(1.2);
+}
+
+/*──────────────────────────────────────────────────────────
+  CSS DE LOGEO
+──────────────────────────────────────────────────────────*/
+@import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
+
+/* DISEÑO DE TODA LA PÁGINA DE LOGEO */
+.content {
+  width: 330px;
+  padding: 40px 30px;
+  border-radius: 10px;
+  margin: 5% auto;
+  background-color: #e1e1e1;
+  box-shadow: 0.3em 0.3em 1em rgba(0, 0, 0, 0.3);
+}
+
+.field {
+  height: 50px;
+  width: 100%;
+  display: flex;
+  position: relative;
+  margin-top: 20px;
+}
+
+.field input {
+  width: 100%;
+  padding-left: 45px;
+  outline: none;
+  border: none;
+  font-size: 18px;
+  background: #dde1e7;
+  color: #595959;
+  border-radius: 25px;
+  box-shadow: inset 2px 2px 5px #BABECC,
+    inset -5px -5px 10px #ffffff73;
+}
+
+.field input:focus {
+  box-shadow: inset 1px 1px 2px #BABECC,
+    inset -1px -1px 2px #ffffff73;
+}
+
+.field span {
+  position: absolute;
+  color: black;
+  width: 50px;
+  line-height: 50px;
+  margin-left: 5%;
+}
+
+.field label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 45px;
+  pointer-events: none;
+  color: #666666;
+}
+
+.field input:valid~label {
+  opacity: 0;
+}
+
+.forgot-pass {
+  margin: 10px 0 0 5px;
+  text-align: left;
+}
+
+.forgot-pass a {
+  font-size: 14px;
+  color: #3498db;
+  text-decoration: none;
+}
+
+.forgot-pass a:hover {
+  text-decoration: underline;
+}
+
+.boton input {
+  width: 100%;
+  height: 50px;
+  font-size: 18px;
+  font-weight: 600;
+  background: #dde1e7;
+  border-radius: 25px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: black;
+  box-shadow: 2px 2px 5px #BABECC, -5px -5px 10px #ffffff73;
+}
+
+.boton input:active {
+  color: #3498db;
+  box-shadow: inset 2px 2px 5px #BABECC,
+    inset -5px -5px 10px #ffffff73;
+}
+
+.sign-up {
+  margin: 10px 0;
+  color: #595959;
+  font-size: 14px;
+  text-align: center;
+}
+
+.sign-up a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.sign-up a:hover {
+  text-decoration: underline;
+}
+
+/* posicionar el icono del ojo dentro del input */
+.password-field {
+  position: relative;
+}
+
+#togglePassword {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #666;
+}
+
+/*──────────────────────────────────────────────────────────
+   RESET PASSWORD (Olvidé la contraseña)
+──────────────────────────────────────────────────────────*/
+.reset-container {
+  max-width: 400px;
+  width: 90%;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: #e1e1e1;
+  border-radius: 10px;
+  box-shadow: 0.3em 0.3em 1em rgba(0, 0, 0, 0.3);
+}
+
+.reset-container .title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.reset-container .title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 2.5rem;
+  height: 4px;
+  background: #6E9C3A;
+  border-radius: 2px;
+}
+
+.reset-container .field {
+  position: relative;
+  margin-top: 1rem;
+}
+
+.reset-container .field input[type="email"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 25px;
+  background: #dde1e7;
+  outline: none;
+  box-shadow: inset 2px 2px 5px #BABECC,
+    inset -5px -5px 10px #ffffff73;
+}
+
+.reset-container .field input[type="email"]:focus {
+  box-shadow: inset 1px 1px 2px #BABECC,
+    inset -1px -1px 2px #ffffff73;
+}
+
+.reset-container .boton {
+  margin-top: 2rem;
+}
+
+.reset-container .boton input[type="submit"] {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #6262AA;
+  color: #E5EEF9;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.reset-container .boton input[type="submit"]:hover {
+  background: #6E9C3A;
+  transform: scale(1.03);
+}
+
+.reset-container .back-login {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.reset-container .back-login a {
+  color: #3498db;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.reset-container .back-login a:hover {
+  text-decoration: underline;
+}
+
+.reset-container .message {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: green;
+}
+
+.reset-container .message.error {
+  color: red;
+}
+
+/* Validación: input con error y mensaje */
+.field input.error {
+  border: 1px solid red !important;
+}
+
+.field small.error {
+  display: block;
+  color: red;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/*──────────────────────────────────────────────────────────
+  MENU PRINCIPAL (menu_principal.php)
+──────────────────────────────────────────────────────────*/
+/* Estilo para el body principal */
+.body-menu_principal {
+  background: #E5EEF9;
+  min-height: 100vh;
+  position: relative;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Contenido principal */
+.cuerpo-menu_principal {
+  width: 85%;
+  margin: 20px auto;
+  padding: 1em;
+  overflow: auto;
+}
+
+/* Estilo para la sección de imagen grande */
+.logo_grande {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.logo_grande img {
+  max-width: 100%;
+  height: auto;
+}
+
+/*──────────────────────────────────────────────────────────
+  MENU LATERAL (menu_lateral.php)
+──────────────────────────────────────────────────────────*/
+/* MENÚ LATERAL */
+.cuerpo-menu-vertical {
+  background-color: #141212;
+  width: 180px;
+  position: fixed;
+  top: 75px;
+  bottom: 0;
+  left: 0;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  z-index: 9;
+}
+
+.menu-interno {
+  flex-grow: 1;
+  padding: 0 10px;
+}
+
+.menu-interno ul {
+  list-style: none;
+  padding: 0;
+}
+
+.menu-interno ul li {
+  color: white;
+  margin-bottom: 10px;
+}
+
+.menu-interno ul li button {
+  width: 100%;
+  padding: 10px;
+  background-color: #6E9C3A;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-interno ul li button:hover {
+  background-color: #5a812d;
+}
+
+button i {
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+/*──────────────────────────────────────────────────────────
+  FORMACION PROFESIONAL (formacion_profesional.php)
+──────────────────────────────────────────────────────────*/
+.fp-page {
+  max-width: 1200px;
+  width: calc(100% - 200px); /* ancho total menos menú (180px) + 20px espaciado */
+  margin: 100px 100px 2rem 200px; 
+  /* top = 100px (altura header), right = 100px, bottom = 2rem, left = 200px (ancho menú + 20px) */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 1) Separar título del header */
+.fp-page .title {
+  margin-top: 0,5rem;    /* baja el título */
+  margin-bottom: 0,5rem; /* espacio debajo */
+}
+
+/* 2) Botones juntos con estilo main .botones */
+.fp-page .botones {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0,5rem;
+}
+.fp-page .botones li {
+  float: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fp-page .botones li a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: .75rem 1.5rem;
+  font-size: 1rem;
+  transition: color .2s, transform .2s;
+  text-decoration: none;
+  cursor: pointer;
+}
+.fp-page .botones li a:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+/* 3) Tabla ocupa todo el ancho interno */
+.fp-page .contenedor {
+  width: 100%;
+  margin: 0;
+}
+.fp-page .contenedor table {
+  width: 100% !important;
+}
+
+/*──────────────────────────────────────────────────────────
+  REGISTROS.PHP — Estilos específicos
+──────────────────────────────────────────────────────────*/
+
+/* Contenedor principal ya lo cubre .fp-page */
+
+/* ====== Formulario de filtros ====== */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.filtros label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+}
+.filtros select,
+.filtros input[type="text"] {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+  min-width: 120px;
+}
+.filtros button {
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color .2s, transform .2s;
+  align-self: flex-end;
+}
+.filtros button:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+/* ====== Pestañas ====== */
+.tabs {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.tabs a {
+  text-decoration: none;
+  font-weight: 500;
+  color: #333;
+  padding: 0.4rem 0.8rem;
+  border-bottom: 3px solid transparent;
+  transition: color .2s, border-color .2s;
+}
+.tabs a.active,
+.tabs a:hover {
+  color: #6E9C3A;
+  border-color: #6E9C3A;
+}
+
+/* ====== Grilla del resumen ====== */
+.grid-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.grid-resumen .inscritos {
+  font-weight: 600;
+  color: #333;
+}
+.grid-resumen .inscritos strong {
+  color: #141212;
+}
+
+/* ====== Tablas generales ====== */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+.tabla th,
+.tabla td {
+  border: 1px solid #d0d0d0;
+  text-align: center;
+  padding: 0.5rem;
+}
+.tabla th {
+  background: #87b4e0;
+  font-weight: 600;
+}
+.tabla td {
+  background: #fff;
+}
+
+/* Inputs en tablas (si hubiera) */
+.tabla input {
+  width: 80%;
+  padding: 0.2rem;
+  border: none;
+  text-align: center;
+  background: transparent;
+}
+
+/* ====== Botones de acciones ====== */
+.btn,
+.btn:hover {
+  text-decoration: none;
+}
+.btn.volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  transition: color .2s, transform .2s;
+}
+.btn.volver:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+/* ====== Calculadora y resumen-mes ====== */
+.calc-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.calc,
+.resumen-mes {
+  flex: 1 1 calc(50% - 1rem);
+  border-collapse: collapse;
+}
+@media (max-width: 768px) {
+  .calc-wrap {
+    flex-direction: column;
+  }
+  .calc,
+  .resumen-mes {
+    flex: 1 1 100%;
+  }
+}
+
+/* Tablas dentro de calc-wrap usan mismas reglas .tabla */
+.calc th,
+.resumen-mes th {
+  background: #87b4e0;
+  font-weight: 600;
+}
+
+/* Hacer que Tabla 1 y Tabla 4 se encojan al contenido */
+.tabla1,
+.tabla4 {
+  width: auto;         /* en lugar de 100% */
+  table-layout: auto;  /* quita fixed para que mida según contenido */
+}
+
+/* Para que la primera columna de la Tabla 2 ("Mes") sea más ancha */
+.tabla2 th:first-child,
+.tabla2 td:first-child {
+  width: 150px;        /* ajusta este valor a la anchura deseada */
+  white-space: nowrap; /* evita que el texto de mes se divida */
+}
+
+/* Hacer que los botones de .tabs se vean como tus enlaces */
+.tabs-form button {
+  background: none;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  font-weight: 500;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color .2s, border-color .2s;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* estado “activo” y hover idénticos a .tabs a */
+.tabs-form button.active,
+.tabs-form button:hover {
+  color: #6E9C3A;
+  border-color: #6E9C3A;
+}
+
+/* Quitar el outline al hacer focus */
+.tabs-form button:focus {
+  outline: none;
+}
+
+/* Reusar estilo de .filtros button */
+.filtros__btn {
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color .2s, transform .2s;
+}
+.filtros__btn:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}
+
+/* TABLA ESTADOS MAS ANCHA */
+/* En la tabla de estados, los selects ocupan al menos 120px */
+#form-guardar-estados .tabla1 td:nth-child(9) select {
+  min-width: 120px;
+  width: auto;
+}
+
+/* BOTONES UNO AL LADO DEL OTRO */
+.botones-accion {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* CONTADOR Y BUSCADOR AL LADO */
+.buscador-contador {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.filtros-inline {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.filtros-inline input[type="text"] {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+/* Contenedor de las tablas de resumen */
+.resumen-tablas {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: flex-start; /* evita estirarse */
+  padding-bottom: 2rem;
+}
+
+/* Las tablas de resumen no ocupan 100%: ancho automático y centradas */
+.tabla-resumen {
+  width: auto;            /* sólo lo justo */
+  table-layout: auto;     /* celdas según contenido */
+  margin: 0 auto;         /* centrar en su contenedor */
+}
+
+/* Aumentar ancho columna “Mes” en Movimiento Mensual */
+.tablas-container .tabla2 th:first-child,
+.tablas-container .tabla2 td:first-child {
+  width: 140px;           /* o el ancho que prefieras */
+  white-space: nowrap;    /* forza a no partir texto */
+}
+
+/* ──────────────────────────────────────────────────────────
+   1) Hacer que las tablas de resumen sean de ancho auto
+   ────────────────────────────────────────────────────────── */
+.tabla-resumen,
+.tabla-resumen-mov,
+.tabla-resumen-asi {
+  width: auto !important;
+  max-width: fit-content !important;
+  margin: 0 auto 2rem;  /* centradas y con espacio abajo */
+  table-layout: auto;   /* ajustan al contenido */
+}
+
+/* ──────────────────────────────────────────────────────────
+   2) Sub-contenedor para cada mini-tabla
+   ────────────────────────────────────────────────────────── */
+.tablas-container {
+  display: flex;
+  gap: 2rem;
+  justify-content: flex-start;
+}
+.subtabla {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ──────────────────────────────────────────────────────────
+   3) Aumentar ancho de la columna “Mes” en Movimiento Mensual
+   ────────────────────────────────────────────────────────── */
+.tabla-resumen-mov th:first-child,
+.tabla-resumen-mov td:first-child {
+  width: 140px;       /* ajusta este valor a tus necesidades */
+  white-space: nowrap;
+}
+
+/* ──────────────────────────────────────────────────────────
+   4) Espaciado entre título y tabla
+   ────────────────────────────────────────────────────────── */
+.subtabla h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+/* 1) Poner tabla 1 y tabla 4 lado a lado */
+.dos-resumen {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+.subtabla-res {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 2) Hacerlas de ancho automático */
+.tabla-resumen-1,
+.tabla-resumen-4 {
+  width: auto;
+  table-layout: auto;
+  margin: 0;
+}
+
+/* 3) Títulos h3 para estas tablas (igual a los de tablas 2/3) */
+.resumen-tablas h3 {
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+.resumen-tablas h3::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 2.5rem;
+  height: 4px;
+  background: #6E9C3A;
+  border-radius: 2px;
+}
+
+/* Forzar ancho igual para cada grupo de 3 columnas */
+.tabla-resumen-asi {
+  width: auto;
+  table-layout: fixed;  /* fija el ancho de cada celda */
+}
+.tabla-resumen-asi th,
+.tabla-resumen-asi td {
+  width: calc(100% / 12); /* 12 columnas totales */
+}
+
+.dos-resumen {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+.subtabla-res {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.resumen-tablas h3 {
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+  position: relative;
+  padding-bottom: 0.3rem;
+}
+.resumen-tablas h3::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.5rem;
+  height: 4px;
+  background: #6E9C3A;
+  border-radius: 2px;
+}
+
+/* Fusionar cabecera Mes con rowspan */
+.tabla-resumen-mov th[rowspan] {
+  vertical-align: middle;
+}
+
+/* Todas las columnas iguales en tabla 3 */
+.tabla-resumen-asi {
+  width: auto;
+  table-layout: fixed;
+}
+.tabla-resumen-asi th,
+.tabla-resumen-asi td {
+  width: calc(100% / 12);
+}
+
+/* Ampliar ancho de Mes si hiciera falta */
+.tabla-resumen-mov th:first-child,
+.tabla-resumen-mov td:first-child {
+  min-width: 140px;
+  white-space: nowrap;
+}
+
+/* ================================
+   Igualar ancho de columnas V, M, T
+   en las tablas del resumen
+=================================== */
+
+/* Aplica a todas las tablas del resumen */
+.tabla-resumen-1,
+.tabla-resumen-4,
+.tabla-resumen-mov,
+.tabla-resumen-asi {
+  table-layout: fixed; /* fuerza columnas iguales */
+}
+
+/* Excepto la primera columna (Mes o título) */
+.tabla-resumen-1 th:not(:first-child),
+.tabla-resumen-1 td:not(:first-child),
+.tabla-resumen-4 th:not(:first-child),
+.tabla-resumen-4 td:not(:first-child),
+.tabla-resumen-mov th:not(:first-child),
+.tabla-resumen-mov td:not(:first-child),
+.tabla-resumen-asi th,
+.tabla-resumen-asi td {
+  width: 60px; /* ajusta este valor al ancho deseado */
+}
+
+:root {
+  /* Ajusta estos dos valores:
+     --first-col-w = ancho de la columna de “Mes” o la cabecera vacía
+     --vm-col-w    = ancho de cada columna V, M, T */
+  --first-col-w: 120px;  /* antes estaba 140px */
+  --vm-col-w:     50px;  /* antes 60px */
+}
+
+/* ──────────────────────────────────────────────────────────
+   Aplicar table-layout fixed y 100% width a TODAS las tablas
+──────────────────────────────────────────────────────────*/
+.tabla-resumen-1,
+.tabla-resumen-4,
+.tabla-resumen-mov,
+.tabla-resumen-asi {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Primera columna (“Mes” o cabecera vacía)
+──────────────────────────────────────────────────────────*/
+.tabla-resumen-1 th:first-child,
+.tabla-resumen-1 td:first-child,
+.tabla-resumen-4 th:first-child,
+.tabla-resumen-4 td:first-child,
+.tabla-resumen-mov th:first-child,
+.tabla-resumen-mov td:first-child {
+  width: var(--first-col-w) !important;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Columnas V/M/T
+──────────────────────────────────────────────────────────*/
+.tabla-resumen-1 th:not(:first-child),
+.tabla-resumen-1 td:not(:first-child),
+.tabla-resumen-4 th:not(:first-child),
+.tabla-resumen-4 td:not(:first-child),
+.tabla-resumen-mov th:not(:first-child),
+.tabla-resumen-mov td:not(:first-child),
+.tabla-resumen-asi th,
+.tabla-resumen-asi td {
+  width: var(--vm-col-w) !important;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Ajustar los headers con colspan=3 para que encajen
+──────────────────────────────────────────────────────────*/
+.tabla-resumen-1 th[colspan="3"],
+.tabla-resumen-4 th[colspan="3"],
+.tabla-resumen-mov th[colspan="3"],
+.tabla-resumen-asi th[colspan="3"] {
+  width: calc(var(--vm-col-w) * 3) !important;
+}
+
+
+/*──────────────────────────────────────────────────────────
+  Registros – Forzar tablas 2 y 3 lado a lado
+──────────────────────────────────────────────────────────*/
+.resumen-tablas .tablas-container {
+  display: flex;         /* contenedor en fila */
+  flex-wrap: nowrap;     /* sin salto de línea */
+  gap: 1rem;             /* espacio entre ambas */
+  justify-content: space-between;
+}
+
+.resumen-tablas .tablas-container .subtabla {
+  flex: 1 1 0;           /* comparten el ancho disponible */
+  min-width: 0;          /* permiten encogerse si hace falta */
+}
+
+.resumen-tablas .tablas-container .subtabla table {
+  width: 100%;           /* cada tabla ocupa todo su subcontenedor */
+  table-layout: fixed;   /* controla anchos iguales según tu variable --vm-w */
+}
+
+
+
+
+/*──────────────────────────────────────────────────────────
+  Registros – Calculadora, tablas 1 y 2 lado a lado
+──────────────────────────────────────────────────────────*/
+.calculadora-container {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  
+}
+.calculadora-container .tabla1,
+.calculadora-container .tabla2 {
+  flex: 1 1 45%;
+  min-width: 300px; /* evita que se achiquen demasiado */
+}
+
+
+/*──────────────────────────────────────────────────────────
+  Registros - Calculadora: tablas lado a lado
+──────────────────────────────────────────────────────────*/
+.calculadora-container {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.calculadora-container .tabla1,
+.calculadora-container .resumen-calculadora {
+  flex: 1 1 48%;
+  min-width: 300px;
+}
+
+/* Ajustes internos para tabla2 */
+.resumen-calculadora {
+  border-collapse: collapse;
+}
+.resumen-calculadora th,
+.resumen-calculadora td {
+  border: 1px solid #d0d0d0;
+  padding: 0.5rem;
+  text-align: center;
+  background: #87b4e0;
+  color: #000;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.resumen-calculadora tbody .resultado td {
+  background: #fff;
+  font-weight: normal;
+  color: #000;
+}
+/* Que el input de días hábiles ocupe todo el ancho */
+#id_dias_habiles {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* Botón de eliminar idéntico al resto */
+.btn-eliminar {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.btn-eliminar i {
+  color: red;
+  font-size: 1.2rem;
+}
+
+/* ──────────────────────────────────────────────────────────
+   REGISTROS – CALCULADORA (tab “Calculadora”) – CSS limpio
+──────────────────────────────────────────────────────────*/
+
+/* 1) Contenedor flex de tablas */
+.calculadora .tablas-container {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;          /* baja a siguiente fila si no cabe */
+  align-items: flex-start;  /* alinea por arriba */
+}
+
+/* 2) Cada tabla ocupa la mitad menos el gap */
+.calculadora .tablas-container > table {
+ flex: 1 1 0;      /* cada tabla crece igual, parte de 0 */
+  width: 100%;      /* para que ocupe todo su flex-basis */
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 200px; /* opcional, para que no sea demasiado estrecha */
+}
+
+/* 3) Responsive: en móvil tablas al 100% */
+@media (max-width: 768px) {
+  .calculadora .tablas-container > table {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+}
+
+/* 4) Encabezados y celdas */
+.calculadora table th,
+.calculadora table td {
+  border: 1px solid #d0d0d0;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  background-color: #fff;
+  color: #000;
+  word-break: break-word;
+  white-space: normal;
+}
+.calculadora table th {
+  background-color: #87b4e0;
+  font-weight: 600;
+}
+
+/* 5) Inputs/selects internos */
+.calculadora .tabla1 input[type="number"],
+.calculadora .tabla1 select,
+.calculadora .tabla2 select {
+  width: 95%;
+  box-sizing: border-box;
+  padding: 0.25rem;
+}
+/* Para el select de mes */
+.calculadora .tabla2 select {
+  width: 95%;
+  min-width: 0;
+}
+
+/* 6) Botones “Vaciar” y “Guardar” */
+.calculadora .botones {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.calculadora .botones input[type="button"],
+.calculadora .botones input[type="submit"] {
+  background-color: #6262AA;
+  color: #E5EEF9;
+  border: 1px solid #2e518b;
+  border-radius: 50px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color .2s, transform .2s;
+  flex-shrink: 0;
+}
+.calculadora .botones input[type="button"]:hover,
+.calculadora .botones input[type="submit"]:hover {
+  color: #6E9C3A;
+  transform: scale(1.05);
+}

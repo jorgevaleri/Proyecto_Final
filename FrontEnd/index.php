@@ -1,22 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- HEAD -->
+<?php include('head.php'); ?>
 
-    <title>Registro de Asistencia de Alumnos</title>
-
-    <link rel="shortcut icon" href="Imagenes/Logo_2.jpg" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Open+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
-
-    <link rel="stylesheet" href="CSS/index.css">
-</head>
+<!-- ESTILOS CSS -->
+ <link rel="stylesheet" href="CSS/style_common.css">
+<link rel="stylesheet" href="CSS/style_public.css">
 
 <!-- HEADER -->
 <?php include('header.php'); ?>
@@ -33,7 +23,8 @@
             <input type="button" onclick="limpiarTabla('id_tabla1')" value="Vaciar tabla">
         </div>
 
-        <table id="id_tabla1" class="tabla1" style="float: left;" width="50%">
+        <div class="tablas-container">
+        <table id="id_tabla1" class="tabla1">
             <tr>
                 <th>N°</th>
                 <th>SEXO</th>
@@ -54,7 +45,7 @@
             </tr>
         </table>
 
-        <table id="id_tabla2" class="tabla2" width="50%">
+        <table id="id_tabla2" class="tabla2">
             <tr>
                 <td colspan="3">
                     <input type="number" id="id_dias_habiles" min="1" max="30" style="width: 80%; text-align: center;">
@@ -93,6 +84,7 @@
                 <th colspan="2">% DE ASISTENCIA</td>
             </tr>
         </table>
+        </div>
     </main>
 
     <script src="../BackEnd/index.js"></script>

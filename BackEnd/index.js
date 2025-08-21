@@ -22,7 +22,8 @@ function insertarFila() {
                       </select>`;
   asis.innerHTML = `<input type="number" size="5" style="width: 80%; text-align: center;" min="0" onchange="calcularAsistencia(); calcularInasistencia(); calcularAsisMedi(); calcularPorAsis()">`;
   inas.innerHTML = `<input type="number" size="5" style="width: 80%; text-align: center;" min="0" onchange="calcularAsistencia(); calcularInasistencia(); calcularAsisMedi(); calcularPorAsis()">`;
-  btn.innerHTML = "<button onclick='eliminarFila(this.parentNode.parentNode)'><i class='fa-solid fa-circle-xmark' style='color: red; font-size: 20px;'></i></button>";
+  btn.innerHTML = "<button class='btn-eliminar' title='Eliminar fila' onclick='eliminarFila(this.parentNode.parentNode)'><i class='fa-solid fa-circle-xmark'></i></button>";
+
 
   //Llamar a las funciones de cálculo
   calcularAsistencia();
