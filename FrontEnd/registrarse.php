@@ -1,24 +1,153 @@
 <?php
-ob_start();
-include('head.php');
-include('header.php');
-include('../BackEnd/conexion.php');
+// INICIALIZACION CENTRAL
+require_once __DIR__ . '/includes/inicializar.php';
 
+// MUESTRAS LOS ERRORES EN DESARROLLO
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-// NO iniciar sesión aquí: registrarse no debe loguear al usuario
-$errors = [];
-$show_step = 1; // 1 = persona (cliente), 2 = usuario (cliente or server validation error)
+// ENDPOINT PARA CHEQUEAR DNI
+if (isset($_GET['action']) && $_GET['action'] === 'check_dni') {
+  while (ob_get_level()) ob_end_clean();
 
-// Traer selects comunes (escuelas, formaciones)
+  header('Content-Type: application/json; charset=utf-8');
+
+  $dni = trim($_GET['dni'] ?? '');
+  if ($dni === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'DNI no proporcionado']);
+    exit;
+  }
+
+  // NORMALIZAR DNI
+  $dniClean = preg_replace('/\D/', '', $dni);
+
+  // BUSCAR PERSONA POR DNI
+  $stmt = mysqli_prepare($conexion, "SELECT personas_id, personas_apellido, personas_nombre, personas_fechnac, personas_sexo FROM personas WHERE personas_dni = ? AND personas_eliminado = 0 LIMIT 1");
+  if (!$stmt) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Error DB prepare personas']);
+    exit;
+  }
+  mysqli_stmt_bind_param($stmt, 's', $dniClean);
+  mysqli_stmt_execute($stmt);
+  mysqli_stmt_store_result($stmt);
+  $exists_persona = (mysqli_stmt_num_rows($stmt) > 0);
+  $persona = null;
+  $pid = null;
+  if ($exists_persona) {
+    mysqli_stmt_bind_result($stmt, $pid, $pape, $pnom, $pfn, $psex);
+    mysqli_stmt_fetch($stmt);
+    $persona = [
+      'id' => (int)$pid,
+      'apellido' => $pape,
+      'nombre' => $pnom,
+      'fechnac' => $pfn,
+      'sexo' => $psex
+    ];
+  }
+  mysqli_stmt_close($stmt);
+
+  $has_usuario = false;
+  if ($exists_persona) {
+    // VERIFICAR SI EXISTE USUARIO ACTIVO
+    $stmt2 = mysqli_prepare($conexion, "SELECT usuarios_id FROM usuarios WHERE personas_id = ? AND usuarios_eliminado = 0 LIMIT 1");
+    if ($stmt2) {
+      mysqli_stmt_bind_param($stmt2, 'i', $pid);
+      mysqli_stmt_execute($stmt2);
+      mysqli_stmt_store_result($stmt2);
+      $has_usuario = (mysqli_stmt_num_rows($stmt2) > 0);
+      mysqli_stmt_close($stmt2);
+    } else {
+      http_response_code(500);
+      echo json_encode(['error' => 'Error DB prepare usuarios']);
+      exit;
+    }
+  }
+
+  // ENVIAR JSON
+  echo json_encode([
+    'exists_persona' => $exists_persona ? true : false,
+    'has_usuario' => $has_usuario ? true : false,
+    'persona' => $persona
+  ]);
+  exit;
+}
+
+// ENDPOINT GEOCODE
+if (isset($_GET['action']) && $_GET['action'] === 'geocode') {
+
+  // LIMPIAR BUFFER
+  while (ob_get_level()) ob_end_clean();
+
+  header('Content-Type: application/json; charset=utf-8');
+
+  $q = trim($_GET['q'] ?? '');
+  if ($q === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'No query provided']);
+    exit;
+  }
+
+  $geocode_email = 'tu-email@ejemplo.com';
+
+  $endpoint = 'https://nominatim.openstreetmap.org/search';
+  $params = http_build_query([
+    'format' => 'json',
+    'q' => $q,
+    'addressdetails' => 1,
+    'limit' => 6,
+  ]);
+  $url = $endpoint . '?' . $params;
+
+  // USAMOS CURL PARA HACER LA PETICION EXTERNA
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+  $headers = [
+    'User-Agent: MiApp-Registro/1.0 (' . $geocode_email . ')',
+    'Accept-Language: es',
+  ];
+  curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+  $res = curl_exec($ch);
+  $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  $err = curl_error($ch);
+  curl_close($ch);
+
+  if ($res === false || $http < 200 || $http >= 300) {
+    http_response_code(502);
+    echo json_encode(['error' => 'Geocoding service error', 'details' => $err]);
+    exit;
+  }
+
+  // DECODIFICAR JSON
+  $decoded = json_decode($res, true);
+  if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(502);
+    $preview = substr($res, 0, 1200);
+    echo json_encode(['error' => 'Invalid geocode response (not JSON)', 'raw_preview' => $preview]);
+    exit;
+  }
+
+  echo json_encode($decoded);
+  exit;
+}
+
+// POST PROCESAMIENTO DE FORM
+$errors = [];
+$show_step = 1;
+$registered = false;
+
+// CARGAR ESCUELAS / FORMACION
 $escuelas = mysqli_query($conexion, "SELECT escuelas_id, escuelas_nombre FROM escuelas WHERE escuelas_eliminado=0 ORDER BY escuelas_nombre");
+
 $formaciones = mysqli_query($conexion, "SELECT formaciones_profesionales_id, formaciones_profesionales_nombre FROM formaciones_profesionales WHERE formaciones_profesionales_eliminado=0 ORDER BY formaciones_profesionales_nombre");
 
-// Si recibimos el POST final (registrarse), procesar todo en transacción.
+// SI SE ENVIA EL FORM
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'final') {
-  // Recoger datos
   $ape = trim($_POST['personas_apellido'] ?? '');
   $nom = trim($_POST['personas_nombre'] ?? '');
   $dni = trim($_POST['personas_dni'] ?? '');
@@ -44,123 +173,185 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'final')
   $pass_conf = $_POST['usuarios_clave_conf'] ?? '';
   $rol = $_POST['usuarios_rol'] ?? 'DOCENTE';
 
-  // Validaciones básicas persona/usuario
-  if ($ape === '' || $nom === '' || $dni === '') $errors[] = 'Completá apellido, nombre y DNI.';
-  if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Ingresá un email válido.';
-  if ($pass === '' || $pass_conf === '' ) $errors[] = 'Completá ambos campos de contraseña.';
-  if ($pass !== $pass_conf) $errors[] = 'Las contraseñas no coinciden.';
-  if (strlen($pass) < 6) $errors[] = 'La contraseña debe tener al menos 6 caracteres.';
+  try {
+    // VALIDAR, EVITAR DUPLICADOS POR DNI
+    $reuse_persona_id = null;
 
-  // Validaciones institucional (solo Director o Docente permitidos)
-  if (!in_array($inst_tipo, ['Director','Docente'])) {
-    $errors[] = 'Seleccioná tipo institucional válido (Director o Docente).';
-  } else {
-    if ($inst_tipo === 'Director' && $inst_escuela <= 0) {
-      $errors[] = 'Seleccioná la escuela para el Director.';
+    $dniClean = preg_replace('/\D/', '', $dni);
+
+    if ($dniClean !== '') {
+
+      // BUSCAR PERSONA POR DNI
+      $stmtCheck = mysqli_prepare($conexion, "SELECT personas_id, personas_apellido, personas_nombre FROM personas WHERE personas_dni = ? AND personas_eliminado = 0 LIMIT 1");
+      if ($stmtCheck) {
+        mysqli_stmt_bind_param($stmtCheck, 's', $dniClean);
+        mysqli_stmt_execute($stmtCheck);
+        mysqli_stmt_store_result($stmtCheck);
+        if (mysqli_stmt_num_rows($stmtCheck) > 0) {
+
+          // EXISTE PERSONA OBTENER ID
+          mysqli_stmt_bind_result($stmtCheck, $existing_persona_id, $existing_apellido, $existing_nombre);
+          mysqli_stmt_fetch($stmtCheck);
+          mysqli_stmt_close($stmtCheck);
+
+          // VERIFICAR SI YA TIENE USUARIO
+          $stmtUserCheck = mysqli_prepare($conexion, "SELECT usuarios_id FROM usuarios WHERE personas_id = ? AND usuarios_eliminado = 0 LIMIT 1");
+          if ($stmtUserCheck) {
+            mysqli_stmt_bind_param($stmtUserCheck, 'i', $existing_persona_id);
+            mysqli_stmt_execute($stmtUserCheck);
+            mysqli_stmt_store_result($stmtUserCheck);
+            if (mysqli_stmt_num_rows($stmtUserCheck) > 0) {
+
+              // YA TIENE USUARIO, SE BLOQUEA CREACION DUPLICADA
+              mysqli_stmt_close($stmtUserCheck);
+              $errors[] = 'Esa persona ya tiene un usuario registrado. Si olvidaste la contraseña, recuperala desde Logeo.';
+              $show_step = 2;
+            } else {
+
+              // EXISTE PERSONA PERO SIN USUARIO
+              mysqli_stmt_close($stmtUserCheck);
+              $reuse_persona_id = (int)$existing_persona_id;
+            }
+          } else {
+            $errors[] = 'Error al verificar usuario existente (DB).';
+            $show_step = 2;
+          }
+        } else {
+          mysqli_stmt_close($stmtCheck);
+
+          // NO EXISTE PERSONA, SEGUIMOS PARA CREAR TODO
+        }
+      } else {
+        $errors[] = 'Error al verificar DNI en la base de datos.';
+        $show_step = 2;
+      }
     }
-    if ($inst_tipo === 'Docente') {
-      if ($inst_escuela <= 0) $errors[] = 'Seleccioná la escuela para el Docente.';
-      if ($inst_formacion <= 0) $errors[] = 'Seleccioná la formación profesional para el Docente.';
-    }
-  }
 
-  // Evitar email duplicado en usuarios activos
-  $email_safe = mysqli_real_escape_string($conexion, $email);
-  $resEmail = mysqli_query($conexion, "SELECT usuarios_id FROM usuarios WHERE usuarios_email='$email_safe' AND usuarios_eliminado=0 LIMIT 1");
-  if ($resEmail && mysqli_num_rows($resEmail) > 0) $errors[] = 'El email ya está en uso por otro usuario.';
+    // SI HAY ERRORES, NO SE ESCRIBE
+    if (!empty($errors)) {
 
-  if (count($errors) === 0) {
-    // Guardar TODO en transacción
-    try {
+      // MOSTRAR FORMULARIO CON ERRORES
+      $show_step = 2;
+    } else {
+
       mysqli_begin_transaction($conexion);
 
-      // Insert persona
-      $ape_s = mysqli_real_escape_string($conexion, $ape);
-      $nom_s = mysqli_real_escape_string($conexion, $nom);
-      $dni_s = mysqli_real_escape_string($conexion, $dni);
-      $fn_s  = mysqli_real_escape_string($conexion, $fn);
-      $sex_s = mysqli_real_escape_string($conexion, $sex);
+      if (!empty($reuse_persona_id)) {
+        $persona_id = (int)$reuse_persona_id;
+      } else {
 
-      $sqlP = "INSERT INTO personas (personas_apellido,personas_nombre,personas_dni,personas_fechnac,personas_sexo,personas_eliminado)
-               VALUES ('$ape_s','$nom_s','$dni_s','$fn_s','$sex_s',0)";
-      mysqli_query($conexion, $sqlP);
-      $persona_id = mysqli_insert_id($conexion);
+        // INSERTAR PERSONA NUEVA, DNI NORMALIZADO
+        $stmtP = mysqli_prepare($conexion, "INSERT INTO personas (personas_apellido, personas_nombre, personas_dni, personas_fechnac, personas_sexo, personas_eliminado) VALUES (?, ?, ?, ?, ?, 0)");
+        if (!$stmtP) throw new Exception("Prepare personas: " . mysqli_error($conexion));
+        $dniToStore = preg_replace('/\D/', '', $dni);
+        mysqli_stmt_bind_param($stmtP, 'sssss', $ape, $nom, $dniToStore, $fn, $sex);
+        mysqli_stmt_execute($stmtP);
+        $persona_id = mysqli_insert_id($conexion);
+        mysqli_stmt_close($stmtP);
+      }
 
-      // Domicilios
+      // DOMICILIOS
+      $stmtD = mysqli_prepare($conexion, "INSERT INTO domicilios (domicilios_calle, domicilios_descripcion, domicilios_latitud, domicilios_longitud, domicilios_predeterminado, personas_id) VALUES (?, ?, ?, ?, ?, ?)");
+      if (!$stmtD) throw new Exception("Prepare domicilios: " . mysqli_error($conexion));
       foreach ($domicilios_calle as $i => $calle) {
-        $c  = mysqli_real_escape_string($conexion, $calle);
-        $d  = mysqli_real_escape_string($conexion, $domicilios_descripcion[$i] ?? '');
-        $la = mysqli_real_escape_string($conexion, $domicilios_lat[$i] ?? '');
-        $ln = mysqli_real_escape_string($conexion, $domicilios_lng[$i] ?? '');
-        $pr = ($i == (int)$domicilios_pred) ? 1 : 0;
-        mysqli_query($conexion, "INSERT INTO domicilios (domicilios_calle,domicilios_descripcion,domicilios_latitud,domicilios_longitud,domicilios_predeterminado,personas_id)
-          VALUES ('$c','$d','$la','$ln',$pr,$persona_id)");
-      }
+        $c = (string)$calle;
+        $d = (string)($domicilios_descripcion[$i] ?? '');
+        $laRaw = $domicilios_lat[$i] ?? '';
+        $lnRaw = $domicilios_lng[$i] ?? '';
+        $pr = ($i === (int)$domicilios_pred) ? 1 : 0;
 
-      // Telefonos
+        // CONVERTIR LATITUD Y LONGITUD EN STRING
+        $laValStr = ($laRaw === '' || $laRaw === null) ? null : str_replace(',', '.', (string)$laRaw);
+        $lnValStr = ($lnRaw === '' || $lnRaw === null) ? null : str_replace(',', '.', (string)$lnRaw);
+        $prVal = (int)$pr;
+        $personaInt = (int)$persona_id;
+
+        mysqli_stmt_bind_param($stmtD, 'ssssii', $c, $d, $laValStr, $lnValStr, $prVal, $personaInt);
+        mysqli_stmt_execute($stmtD);
+      }
+      mysqli_stmt_close($stmtD);
+
+      // TELEFONOS
+      $stmtT = mysqli_prepare($conexion, "INSERT INTO telefonos (telefonos_numero, telefonos_descripcion, telefonos_predeterminado, personas_id) VALUES (?, ?, ?, ?)");
+      if (!$stmtT) throw new Exception("Prepare telefonos: " . mysqli_error($conexion));
       foreach ($telefonos_numero as $i => $num) {
-        $n = mysqli_real_escape_string($conexion, $num);
-        $d = mysqli_real_escape_string($conexion, $telefonos_descripcion[$i] ?? '');
-        $pr = ($i == (int)$telefonos_pred) ? 1 : 0;
-        mysqli_query($conexion, "INSERT INTO telefonos (telefonos_numero,telefonos_descripcion,telefonos_predeterminado,personas_id)
-          VALUES ('$n','$d',$pr,$persona_id)");
+        $n = (string)$num;
+        $d = (string)($telefonos_descripcion[$i] ?? '');
+        $pr = ($i === (int)$telefonos_pred) ? 1 : 0;
+        $personaInt = (int)$persona_id;
+        mysqli_stmt_bind_param($stmtT, 'ssii', $n, $d, $pr, $personaInt);
+        mysqli_stmt_execute($stmtT);
       }
+      mysqli_stmt_close($stmtT);
 
-      // Institucional
-      // borrar previos por si acaso (aunque persona es nueva)
-      mysqli_query($conexion, "DELETE FROM institucional WHERE personas_id=$persona_id");
+      // INSTITUCIONAL, AGREGAMOS SEGUN TIPO
+      $stmtDelInst = mysqli_prepare($conexion, "DELETE FROM institucional WHERE personas_id = ?");
+      if (!$stmtDelInst) throw new Exception("Prepare institucional delete: " . mysqli_error($conexion));
+      mysqli_stmt_bind_param($stmtDelInst, 'i', $persona_id);
+      mysqli_stmt_execute($stmtDelInst);
+      mysqli_stmt_close($stmtDelInst);
+
+      // TIPO DIRECTOR
       if ($inst_tipo === 'Director') {
-        $inst_esc = (int) $inst_escuela;
-        mysqli_query($conexion, "INSERT INTO institucional (institucional_tipo, escuelas_id, personas_id) VALUES ('Director',$inst_esc,$persona_id)");
+        $stmtI = mysqli_prepare($conexion, "INSERT INTO institucional (institucional_tipo, escuelas_id, personas_id) VALUES ('Director', ?, ?)");
+        if (!$stmtI) throw new Exception("Prepare institucional insert director: " . mysqli_error($conexion));
+        mysqli_stmt_bind_param($stmtI, 'ii', $inst_escuela, $persona_id);
+        mysqli_stmt_execute($stmtI);
+        mysqli_stmt_close($stmtI);
+
+        // TIPO DOCENTE
       } elseif ($inst_tipo === 'Docente') {
-        $inst_esc = (int) $inst_escuela;
-        $inst_form = (int) $inst_formacion;
-        mysqli_query($conexion, "INSERT INTO institucional (institucional_tipo, escuelas_id, formaciones_profesionales_id, personas_id) VALUES ('Docente',$inst_esc,$inst_form,$persona_id)");
+        $stmtI = mysqli_prepare($conexion, "INSERT INTO institucional (institucional_tipo, escuelas_id, formaciones_profesionales_id, personas_id) VALUES ('Docente', ?, ?, ?)");
+        if (!$stmtI) throw new Exception("Prepare institucional insert docente: " . mysqli_error($conexion));
+        mysqli_stmt_bind_param($stmtI, 'iii', $inst_escuela, $inst_formacion, $persona_id);
+        mysqli_stmt_execute($stmtI);
+        mysqli_stmt_close($stmtI);
       }
 
-      // Usuario
+      // USUARIO
       $hash = password_hash($pass, PASSWORD_DEFAULT);
-      $hash_s = mysqli_real_escape_string($conexion, $hash);
-      $rol_s = mysqli_real_escape_string($conexion, $rol);
+      $stmtU = mysqli_prepare($conexion, "INSERT INTO usuarios (personas_id, usuarios_email, usuarios_clave, usuarios_eliminado, usuarios_rol) VALUES (?, ?, ?, 0, ?)");
+      if (!$stmtU) throw new Exception("Prepare usuarios: " . mysqli_error($conexion));
+      mysqli_stmt_bind_param($stmtU, 'isss', $persona_id, $email, $hash, $rol);
+      mysqli_stmt_execute($stmtU);
+      mysqli_stmt_close($stmtU);
 
-      $sqlU = "INSERT INTO usuarios (personas_id, usuarios_email, usuarios_clave, usuarios_eliminado, usuarios_rol)
-               VALUES ($persona_id, '$email_safe', '$hash_s', 0, '$rol_s')";
-      mysqli_query($conexion, $sqlU);
-
-      // Commit
       mysqli_commit($conexion);
 
-      // Redirigir a logeo.php
-      header('Location: logeo.php', true, 303);
-      exit;
-    } catch (Exception $e) {
-      mysqli_rollback($conexion);
-      $errors[] = 'Error al guardar: ' . $e->getMessage();
-      $show_step = 2;
+      // SWEETALERT2
+      $registered = true;
     }
-  } else {
-    // Mostrar errores y el paso 2 para que el usuario los corrija
+  } catch (Exception $e) {
+    if (isset($conexion)) {
+      @mysqli_rollback($conexion);
+    }
+    $errors[] = 'Error al guardar: ' . $e->getMessage();
     $show_step = 2;
   }
-} // end final POST
+}
 
-// Si NO es POST final, la interacción ocurre en el cliente (JS) entre pasos 1 y 2.
-// Para mantener valores cuando hubo error, vamos a reutilizar $_POST en el HTML.
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Registrarse</title>
-  <link rel="stylesheet" href="CSS/style_common.css">
-  <link rel="stylesheet" href="CSS/style_app.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-  <script defer src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-</head>
-<body>
-  <main class="fp-page">
-    <h1>Registro</h1>
 
+<!-- HEAD -->
+<?php include('head.php'); ?>
+
+<!-- HEADER -->
+<?php include('header.php'); ?>
+
+<!-- ESTILOS CSS -->
+<link rel="stylesheet" href="CSS/estilo_comun.css">
+<link rel="stylesheet" href="CSS/registrarse.css">
+
+<!-- CUERPO PRINCIPAL -->
+
+<body class="login-page">
+  <main class="fp-page">
+    <h1>Registrarse</h1>
+
+    <!-- MOSTRAR ERRORES -->
     <?php if (!empty($errors)): ?>
       <div class="error">
         <?php foreach ($errors as $err): ?>
@@ -169,37 +360,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'final')
       </div>
     <?php endif; ?>
 
-    <!-- Un único form que al final hace POST con step=final -->
-    <form id="regForm" method="post">
-      <input type="hidden" name="step" value="final"> <!-- siempre final en el POST real -->
+    <div id="reg_validation_message" style="display:none"></div>
 
-      <!-- STEP 1: Persona (cliente) -->
+    <!-- FORMULARIO -->
+    <form id="regForm" method="post" novalidate>
+      <input type="hidden" name="step" value="final">
+
+      <!-- PASO 1 -->
       <section id="step1" style="display: <?= $show_step === 1 ? 'block' : 'none' ?>">
-        <h2>Paso 1 — Datos Personales</h2>
-        <label>Apellido:<br>
-          <input name="personas_apellido" id="personas_apellido" required value="<?= htmlspecialchars($_POST['personas_apellido'] ?? '') ?>">
-        </label><br>
-        <label>Nombre:<br>
-          <input name="personas_nombre" id="personas_nombre" required value="<?= htmlspecialchars($_POST['personas_nombre'] ?? '') ?>">
-        </label><br>
-        <label>DNI:<br>
-          <input name="personas_dni" id="personas_dni" required value="<?= htmlspecialchars($_POST['personas_dni'] ?? '') ?>">
-        </label><br>
-        <label>Fecha Nac.:<br>
-          <input type="date" name="personas_fechnac" id="personas_fechnac" required value="<?= htmlspecialchars($_POST['personas_fechnac'] ?? '') ?>">
-        </label><br>
-        <label>Sexo:<br>
-          <select name="personas_sexo" id="personas_sexo" required>
-            <option value="">--</option>
-            <option value="Masculino" <?= (isset($_POST['personas_sexo']) && $_POST['personas_sexo']=='Masculino')?'selected':'' ?>>Masculino</option>
-            <option value="Femenino"  <?= (isset($_POST['personas_sexo']) && $_POST['personas_sexo']=='Femenino')?'selected':'' ?>>Femenino</option>
-          </select>
-        </label><br>
+
+        <!-- DATOS PERSONALES -->
+        <h3>Datos Personales</h3>
+
+        <div class="row">
+          <label>Apellido
+            <input name="personas_apellido" id="personas_apellido" value="<?= htmlspecialchars($_POST['personas_apellido'] ?? '') ?>">
+          </label>
+
+          <label>Nombre
+            <input name="personas_nombre" id="personas_nombre" value="<?= htmlspecialchars($_POST['personas_nombre'] ?? '') ?>">
+          </label>
+        </div>
+
+        <div class="row">
+          <label>DNI
+            <input name="personas_dni" id="personas_dni" value="<?= htmlspecialchars($_POST['personas_dni'] ?? '') ?>">
+          </label>
+
+          <label>Fecha Nac.
+            <input type="date" name="personas_fechnac" id="personas_fechnac" value="<?= htmlspecialchars($_POST['personas_fechnac'] ?? '') ?>">
+          </label>
+
+          <label>Sexo
+            <select name="personas_sexo" id="personas_sexo">
+              <option value="">--</option>
+              <option value="Masculino" <?= (isset($_POST['personas_sexo']) && $_POST['personas_sexo'] == 'Masculino') ? 'selected' : '' ?>>Masculino</option>
+              <option value="Femenino" <?= (isset($_POST['personas_sexo']) && $_POST['personas_sexo'] == 'Femenino') ? 'selected' : '' ?>>Femenino</option>
+            </select>
+          </label>
+        </div>
 
         <!-- DOMICILIOS -->
         <h3>Domicilios</h3>
-        <button type="button" id="addDom">Agregar domicilio</button>
-        <div id="doms">
+        <div id="doms" class="blocks">
           <?php
           $doms_post = $_POST['domicilios_calle'] ?? [];
           if (!empty($doms_post) && is_array($doms_post)):
@@ -210,23 +413,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'final')
               $lng = htmlspecialchars($_POST['domicilios_longitud'][$i] ?? '');
               $pred = (isset($_POST['domicilios_predeterminado']) && (int)$_POST['domicilios_predeterminado'] === $i) ? 'checked' : '';
           ?>
-            <div class="dom-block">
-              <?php if ($i > 0): ?><button type="button" class="del-dom">❌</button><?php endif; ?>
-              <label>Calle y número<br><input name="domicilios_calle[]" placeholder="Calle y número" required value="<?= $c ?>"></label>
-              <label>Descripción<br><input name="domicilios_descripcion[]" placeholder="Descripción" value="<?= $desc ?>"></label>
-              <label>Predeterminado <input type="radio" name="domicilios_predeterminado" value="<?= $i ?>" <?= $pred ?>></label>
-              <label>Buscar dirección<br><input class="map-search" placeholder="Buscar dirección"></label>
-              <button type="button" class="btn-search">Buscar</button>
-              <div class="map" style="height:150px;"></div>
-              <input type="hidden" name="domicilios_latitud[]" value="<?= $lat ?>">
-              <input type="hidden" name="domicilios_longitud[]" value="<?= $lng ?>">
-            </div>
-          <?php
+              <div class="dom-block">
+                <?php if ($i > 0): ?><button type="button" class="del-dom">❌</button><?php endif; ?>
+                <label>Calle y número<br><input name="domicilios_calle[]" placeholder="Calle y número" value="<?= $c ?>"></label>
+
+                <label>Descripción<br><input name="domicilios_descripcion[]" placeholder="Descripción" value="<?= $desc ?>"></label>
+
+                <label>Predeterminado <input type="radio" name="domicilios_predeterminado" value="<?= $i ?>" <?= $pred ?>></label>
+
+                <label>Buscar dirección<br><input class="map-search" placeholder="Buscar dirección"></label>
+
+                <!-- BOTON BUSCAR -->
+                <button type="button" class="btn-search">Buscar</button>
+                <div class="map" style="height:150px;"></div>
+                <input type="hidden" name="domicilios_latitud[]" value="<?= $lat ?>">
+                <input type="hidden" name="domicilios_longitud[]" value="<?= $lng ?>">
+              </div>
+            <?php
             endforeach;
           else:
-          ?>
+            ?>
             <div class="dom-block">
-              <label>Calle y número<br><input name="domicilios_calle[]" placeholder="Calle y número" required></label>
+              <label>Calle y número<br><input name="domicilios_calle[]" placeholder="Calle y número"></label>
               <label>Descripción<br><input name="domicilios_descripcion[]" placeholder="Descripción"></label>
               <label>Predeterminado <input type="radio" name="domicilios_predeterminado" value="0" checked></label>
               <label>Buscar dirección<br><input class="map-search" placeholder="Buscar dirección"></label>
@@ -238,10 +446,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'final')
           <?php endif; ?>
         </div>
 
-        <!-- TELÉFONOS -->
+        <!-- BOTON AGREGAR OTRO DOMICILIO -->
+        <button type="button" id="addDom" class="pill">Agregar otro Domicilio</button>
+
+        <!-- TELEFONO -->
         <h3>Teléfonos</h3>
-        <button type="button" id="addTel">Agregar teléfono</button>
-        <div id="tels">
+        <div id="tels" class="blocks">
           <?php
           $tels_post = $_POST['telefonos_numero'] ?? [];
           if (!empty($tels_post) && is_array($tels_post)):
@@ -250,270 +460,158 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'final')
               $desc = htmlspecialchars($_POST['telefonos_descripcion'][$i] ?? '');
               $pred = (isset($_POST['telefonos_predeterminado']) && (int)$_POST['telefonos_predeterminado'] === $i) ? 'checked' : '';
           ?>
-            <div class="tel-block">
-              <?php if ($i > 0): ?><button type="button" class="del-tel">❌</button><?php endif; ?>
-              <label>Número<br><input name="telefonos_numero[]" placeholder="Número" required value="<?= $num ?>"></label>
-              <label>Descripción<br><input name="telefonos_descripcion[]" placeholder="Descripción" value="<?= $desc ?>"></label>
-              <label>Predeterminado <input type="radio" name="telefonos_predeterminado" value="<?= $i ?>" <?= $pred ?>></label>
-            </div>
-          <?php
+              <div class="tel-block">
+                <?php if ($i > 0): ?><button type="button" class="del-tel">❌</button><?php endif; ?>
+                <label>Número<br><input name="telefonos_numero[]" placeholder="Número" value="<?= $num ?>"></label>
+
+                <label>Descripción<br><input name="telefonos_descripcion[]" placeholder="Descripción" value="<?= $desc ?>"></label>
+
+                <label>Predeterminado <input type="radio" name="telefonos_predeterminado" value="<?= $i ?>" <?= $pred ?>></label>
+              </div>
+            <?php
             endforeach;
           else:
-          ?>
+            ?>
             <div class="tel-block">
-              <label>Número<br><input name="telefonos_numero[]" placeholder="Número" required></label>
+              <label>Número<br><input name="telefonos_numero[]" placeholder="Número"></label>
               <label>Descripción<br><input name="telefonos_descripcion[]" placeholder="Descripción"></label>
               <label>Predeterminado <input type="radio" name="telefonos_predeterminado" value="0" checked></label>
             </div>
           <?php endif; ?>
         </div>
 
+        <!-- AGREGAR OTRO TELEFONO -->
+        <button type="button" id="addTel" class="pill">Agregar otro Telefono</button>
+
         <!-- INSTITUCIONAL -->
         <h3>Institucional</h3>
-        <label>Tipo de Persona:<br>
-          <select name="inst_tipo" id="inst_tipo" required>
-            <option value="">--</option>
-            <option value="Director" <?= (isset($_POST['inst_tipo']) && $_POST['inst_tipo']=='Director')?'selected':'' ?>>Director</option>
-            <option value="Docente"  <?= (isset($_POST['inst_tipo']) && $_POST['inst_tipo']=='Docente')?'selected':'' ?>>Docente</option>
-            <!-- Alumno eliminado -->
-          </select>
-        </label><br>
+        <div class="row">
+          <label>Tipo de Persona
+            <select name="inst_tipo" id="inst_tipo">
+              <option value="">--</option>
+              <option value="Director" <?= (isset($_POST['inst_tipo']) && $_POST['inst_tipo'] == 'Director') ? 'selected' : '' ?>>Director</option>
+              <option value="Docente" <?= (isset($_POST['inst_tipo']) && $_POST['inst_tipo'] == 'Docente') ? 'selected' : '' ?>>Docente</option>
+            </select>
+          </label>
 
-        <label id="label_escuela">Escuela:<br>
-          <select name="inst_escuela" id="inst_escuela">
-            <option value="">--</option>
-            <?php mysqli_data_seek($escuelas, 0); while ($e = mysqli_fetch_assoc($escuelas)): ?>
-              <option value="<?= $e['escuelas_id'] ?>" <?= (isset($_POST['inst_escuela']) && $_POST['inst_escuela']==$e['escuelas_id'])?'selected':'' ?>>
-                <?= htmlspecialchars($e['escuelas_nombre']) ?>
-              </option>
-            <?php endwhile; ?>
-          </select>
-        </label><br>
+          <label id="label_escuela">Escuela
+            <select name="inst_escuela" id="inst_escuela">
+              <option value="">--</option>
+              <?php mysqli_data_seek($escuelas, 0);
+              while ($e = mysqli_fetch_assoc($escuelas)): ?>
+                <option value="<?= $e['escuelas_id'] ?>" <?= (isset($_POST['inst_escuela']) && $_POST['inst_escuela'] == $e['escuelas_id']) ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($e['escuelas_nombre']) ?>
+                </option>
+              <?php endwhile; ?>
+            </select>
+          </label>
 
-        <label id="label_formacion">Formación Profesional:<br>
-          <select name="inst_formacion" id="inst_formacion">
-            <option value="">--</option>
-            <?php mysqli_data_seek($formaciones, 0); while ($f = mysqli_fetch_assoc($formaciones)): ?>
-              <option value="<?= $f['formaciones_profesionales_id'] ?>" <?= (isset($_POST['inst_formacion']) && $_POST['inst_formacion']==$f['formaciones_profesionales_id'])?'selected':'' ?>>
-                <?= htmlspecialchars($f['formaciones_profesionales_nombre']) ?>
-              </option>
-            <?php endwhile; ?>
-          </select>
-        </label><br>
+          <label id="label_formacion">Formación Profesional
+            <select name="inst_formacion" id="inst_formacion">
+              <option value="">--</option>
+              <?php mysqli_data_seek($formaciones, 0);
+              while ($f = mysqli_fetch_assoc($formaciones)): ?>
+                <option value="<?= $f['formaciones_profesionales_id'] ?>" <?= (isset($_POST['inst_formacion']) && $_POST['inst_formacion'] == $f['formaciones_profesionales_id']) ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($f['formaciones_profesionales_nombre']) ?>
+                </option>
+              <?php endwhile; ?>
+            </select>
+          </label>
+        </div>
 
-        <!-- BOTÓN "Siguiente" (no envía el formulario) -->
-        <button type="button" id="toStep2">Siguiente</button>
+        <!-- BOTON SIGUIENTE -->
+        <div class="actions">
+          <button type="button" id="toStep2" class="pill primary">Siguiente &rarr;</button>
+        </div>
       </section>
 
-      <!-- STEP 2: Usuario (cliente) -->
+      <!-- PASO 2 -->
       <section id="step2" style="display: <?= $show_step === 2 ? 'block' : 'none' ?>">
-        <h2>Paso 2 — Datos de Usuario</h2>
 
-        <p><strong>Persona:</strong>
-          <?= htmlspecialchars($_POST['personas_apellido'] ?? '') ?>,
-          <?= htmlspecialchars($_POST['personas_nombre'] ?? '') ?>
-        </p>
+        <!-- DATOS DE USUARIO -->
+        <h3>Datos de Usuario</h3>
 
-        <label>Rol<br>
-          <select name="usuarios_rol" required>
-            <option value="ADMINISTRADOR">ADMINISTRADOR</option>
-            <option value="DIRECTOR">DIRECTOR</option>
-            <option value="DOCENTE" selected>DOCENTE</option>
-          </select>
-        </label><br>
+        <div class="row">
+          <label>Rol
+            <select name="usuarios_rol">
+              <option value="DIRECTOR">DIRECTOR</option>
+              <option value="DOCENTE">DOCENTE</option>
+            </select>
+          </label>
 
-        <label>Email<br>
-          <input type="email" name="usuarios_email" id="usuarios_email" required value="<?= htmlspecialchars($_POST['usuarios_email'] ?? '') ?>">
-        </label><br>
+          <label>Email
+            <input type="email" name="usuarios_email" id="usuarios_email" value="<?= htmlspecialchars($_POST['usuarios_email'] ?? '') ?>">
+          </label>
+        </div>
 
-        <label>Contraseña<br>
-          <input type="password" name="usuarios_clave" id="usuarios_clave" required>
-          <i class="bi bi-eye-slash toggle-password" toggle="#usuarios_clave" title="Mostrar/Ocultar"></i>
-        </label><br>
+        <div class="row">
+          <label>Contraseña
+            <input type="password" name="usuarios_clave" id="usuarios_clave">
+            <i class="toggle-password" toggle="#usuarios_clave" title="Mostrar/Ocultar"></i>
+          </label>
 
-        <label>Confirmar Contraseña<br>
-          <input type="password" name="usuarios_clave_conf" id="usuarios_clave_conf" required>
-          <i class="bi bi-eye-slash toggle-password" toggle="#usuarios_clave_conf" title="Mostrar/Ocultar"></i>
-        </label><br>
+          <label>Confirmar Contraseña
+            <input type="password" name="usuarios_clave_conf" id="usuarios_clave_conf">
+            <i class="toggle-password" toggle="#usuarios_clave_conf" title="Mostrar/Ocultar"></i>
+          </label>
+        </div>
 
-        <!-- BOTONES: Volver (cliente) y Registrarse (envía POST final) -->
-        <button type="button" id="backToStep1">Volver</button>
-        <button type="submit" id="btnRegister">Registrarse</button>
+        <div class="actions">
+          <button type="button" id="backToStep1" class="pill">Volver</button>
+          <button type="submit" id="btnRegister" class="pill primary">Registrarse</button>
+        </div>
       </section>
     </form>
 
   </main>
 
+  <!-- FOOTER -->
   <?php include('footer.php'); ?>
 
+  <!-- ENDPOINTS ABSOLUTOS QUE USA JS -->
+  <?php
+  $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+  $host = $_SERVER['HTTP_HOST'];
+  $scriptPath = $_SERVER['SCRIPT_NAME'];
+  $geocodeEndpoint = $scheme . '://' . $host . $scriptPath;
+  ?>
   <script>
-    // Manejo de pasos en cliente
-    document.addEventListener('DOMContentLoaded', () => {
-      const step1 = document.getElementById('step1');
-      const step2 = document.getElementById('step2');
-      const toStep2 = document.getElementById('toStep2');
-      const backToStep1 = document.getElementById('backToStep1');
-
-      const regForm = document.getElementById('regForm');
-
-      toStep2 && toStep2.addEventListener('click', () => {
-        // Validaciones básicas en cliente antes de pasar a paso 2
-        const ape = document.getElementById('personas_apellido').value.trim();
-        const nom = document.getElementById('personas_nombre').value.trim();
-        const dni = document.getElementById('personas_dni').value.trim();
-        if (!ape || !nom || !dni) {
-          return alert('Completá apellido, nombre y DNI antes de continuar.');
-        }
-        // mostrar paso 2
-        step1.style.display = 'none';
-        step2.style.display = 'block';
-      });
-
-      backToStep1 && backToStep1.addEventListener('click', () => {
-        step2.style.display = 'none';
-        step1.style.display = 'block';
-        // Los valores permanecen porque son los mismos inputs del form
-      });
-
-      // Toggle mostrar/ocultar contraseña
-      document.querySelectorAll('.toggle-password').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const inp = document.querySelector(btn.getAttribute('toggle'));
-          if (inp.type === 'password') {
-            inp.type = 'text';
-            btn.classList.replace('bi-eye-slash', 'bi-eye');
-          } else {
-            inp.type = 'password';
-            btn.classList.replace('bi-eye', 'bi-eye-slash');
-          }
-        });
-      });
-
-      // === DOMICILIOS: clonación y mapas ===
-      const doms = document.getElementById('doms'),
-        baseDom = doms ? doms.querySelector('.dom-block') : null,
-        btnDom = document.getElementById('addDom');
-
-      function initDom(block, idx) {
-        const delBtn = block.querySelector('.del-dom');
-        if (delBtn) delBtn.addEventListener('click', () => block.remove());
-
-        const mapEl = block.querySelector('.map'),
-          search = block.querySelector('.map-search'),
-          btnSearch = block.querySelector('.btn-search'),
-          latInput = block.querySelector('input[name="domicilios_latitud[]"]'),
-          lngInput = block.querySelector('input[name="domicilios_longitud[]"]');
-
-        if (typeof L === 'undefined') return;
-
-        mapEl.innerHTML = '';
-        const map = L.map(mapEl).setView([-28.4682, -65.7795], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        const marker = L.marker(map.getCenter(), { draggable: true })
-          .addTo(map)
-          .on('moveend', e => {
-            const { lat, lng } = e.target.getLatLng();
-            latInput.value = lat;
-            lngInput.value = lng;
-          });
-
-        if (latInput.value && lngInput.value) {
-          const la = parseFloat(latInput.value), lo = parseFloat(lngInput.value);
-          marker.setLatLng([la, lo]);
-          map.setView([la, lo], 15);
-        }
-
-        btnSearch && btnSearch.addEventListener('click', () => {
-          const q = search.value.trim();
-          if (!q) return alert('Ingresa una dirección');
-          fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`)
-            .then(r => r.json()).then(data => {
-              if (!data[0]) return alert('Dirección no encontrada');
-              const la = parseFloat(data[0].lat), lo = parseFloat(data[0].lon);
-              marker.setLatLng([la, lo]);
-              map.setView([la, lo], 15);
-              latInput.value = la;
-              lngInput.value = lo;
-            })
-            .catch(() => alert('Error al buscar en el mapa'));
-        });
-      }
-
-      if (doms) {
-        doms.querySelectorAll('.dom-block').forEach((blk, i) => initDom(blk, i));
-        btnDom && btnDom.addEventListener('click', () => {
-          const idx = doms.children.length;
-          const clone = baseDom.cloneNode(true);
-          clone.querySelectorAll('input:not([type="radio"])').forEach(i => i.value = '');
-          const radio = clone.querySelector('input[type="radio"]');
-          if (radio) radio.value = idx;
-          if (!clone.querySelector('.del-dom')) {
-            const del = document.createElement('button');
-            del.type = 'button';
-            del.className = 'del-dom';
-            del.textContent = '❌';
-            clone.insertBefore(del, clone.firstChild);
-          }
-          doms.appendChild(clone);
-          initDom(clone, idx);
-        });
-      }
-
-      // TELEFONOS
-      const tels = document.getElementById('tels'),
-        baseTel = tels ? tels.querySelector('.tel-block') : null,
-        btnTel = document.getElementById('addTel');
-
-      function initTel(block, idx) {
-        const delBtn = block.querySelector('.del-tel');
-        if (delBtn) delBtn.addEventListener('click', () => block.remove());
-      }
-
-      if (tels) {
-        tels.querySelectorAll('.tel-block').forEach((blk, i) => initTel(blk, i));
-        btnTel && btnTel.addEventListener('click', () => {
-          const idx = tels.children.length;
-          const clone = baseTel.cloneNode(true);
-          clone.querySelectorAll('input:not([type="radio"])').forEach(i => i.value = '');
-          const radio = clone.querySelector('input[type="radio"]');
-          if (radio) radio.value = idx;
-          if (!clone.querySelector('.del-tel')) {
-            const del = document.createElement('button');
-            del.type = 'button';
-            del.className = 'del-tel';
-            del.textContent = '❌';
-            clone.insertBefore(del, clone.firstChild);
-          }
-          tels.appendChild(clone);
-          initTel(clone, idx);
-        });
-      }
-
-      // Institucional toggle (actualizado: sin 'Alumno')
-      const tipoSel = document.getElementById('inst_tipo');
-      const escuelaLab = document.getElementById('label_escuela');
-      const formacionLab = document.getElementById('label_formacion');
-
-      function toggleInstitucional() {
-        const val = tipoSel ? tipoSel.value : '';
-        if (val === 'Director') {
-          escuelaLab && (escuelaLab.style.display = 'block');
-          formacionLab && (formacionLab.style.display = 'none');
-        } else if (val === 'Docente') {
-          escuelaLab && (escuelaLab.style.display = 'block');
-          formacionLab && (formacionLab.style.display = 'block');
-        } else {
-          escuelaLab && (escuelaLab.style.display = 'none');
-          formacionLab && (formacionLab.style.display = 'none');
-        }
-      }
-      tipoSel && tipoSel.addEventListener('change', toggleInstitucional);
-      toggleInstitucional();
-    });
+    // VARIABLES QUE JS UTILIZARA
+    window.GEOCODE_ENDPOINT = "<?= htmlspecialchars($geocodeEndpoint, ENT_QUOTES) ?>";
+    console.log('GEOCODE_ENDPOINT (desde PHP):', window.GEOCODE_ENDPOINT);
   </script>
+
+  <?php if (!empty($registered)): ?>
+    <!-- SWEETALERT2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+          icon: 'success',
+          title: 'Registro Exitoso',
+          text: 'Tu usuario se creó correctamente. Serás redirigido al inicio de sesión.',
+          confirmButtonText: 'Ir a Logeo',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          didOpen: () => {
+            setTimeout(() => {
+              window.location.href = 'logeo.php';
+            }, 3500);
+          }
+        }).then(() => {
+          window.location.href = 'logeo.php';
+        });
+      });
+    </script>
+  <?php endif; ?>
+
+  <!-- SCRITPS -->
+  <script src="JS/validaciones_registrarse.js" defer></script>
+  <script src="JS/registrarse.js" defer></script>
+
 </body>
+
 </html>
+
+<!-- ENVIAMOS BUFFER AL CLIENTE -->
 <?php ob_end_flush(); ?>

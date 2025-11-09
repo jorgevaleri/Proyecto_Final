@@ -1,13 +1,11 @@
 <?php
-// deslogeo.php - destruir sesión de forma correcta y evitar cache
-// -> NO debe haber salida (HTML/espacios) antes de las cabeceras
-
+// DESTRUIR SESION DE FORMA CORRECTA Y EVITAR CACHE
 session_start();
 
-// Limpiar todas las variables de sesión
+// LIMPIAR TODAS LAS VARIABLES DE SESION
 $_SESSION = [];
 
-// Si se usan cookies para la sesión, borrar la cookie de sesión
+// SI SE USAN COOKIES PARA LA SESION, BORRAR
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(
@@ -21,15 +19,15 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// Destruir la sesión en el servidor
+// DESTRUIR LA SESION EN EL SERVIDOR
 session_destroy();
 
-// CABECERAS para evitar que el navegador muestre páginas cacheadas al usar atrás/adelante
+// CABECERAS PARA EVITAR QUE EL NAVEGADOR MUESTRE PAGINAS CACHEADAS AL USAR ATRAS / ADELANTE
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 header('Expires: 0');
 
-// Redirigir al login/index (usar 303 para POST->GET safe)
+// REDIRIGIR AL LOGIN / INDEX
 header('Location: index.php', true, 303);
 exit;

@@ -1,49 +1,52 @@
 <?php
-// header.php
 
-// Si no hay sesión iniciada, la iniciamos (es mejor iniciarla en head.php si lo prefieres)
-if (session_status() === PHP_SESSION_NONE) {
-  session_start();
-}
-
-// Determina la página activa
+// DETERMINAR PAGINA ACTUAL
 $currentPage = basename($_SERVER['SCRIPT_FILENAME']);
 
-// Normalizamos el nombre del usuario (evita warnings si la clave no existe)
+// NORMALIZAMOS EL NOMBRE DEL USUARIO
 $personas_nombre   = $_SESSION['personas_nombre']   ?? '';
 $personas_apellido = $_SESSION['personas_apellido'] ?? '';
 $personas_rol      = $_SESSION['personas_rol']      ?? '';
 
-// Nombre a mostrar (vacío si no hay usuario)
+// NOMBRE A MOSTRAR
 $displayName = trim($personas_nombre . ' ' . $personas_apellido);
+
 ?>
+
 <header>
   <div class="ancho">
+    <!-- LOGO -->
     <div class="logo">
-      <a href="index.php">
-        <img src="Imagenes/Logo_3.png" alt="Logo" />
-      </a>
+      <a><img src="Imagenes/Logo_3.png" alt="Logo" /></a>
     </div>
+
+    <!-- NAVEGACION ADAPTATIVA SEGUN LA PAGINA -->
     <nav>
       <ul>
+
+        <!-- INDEX -->
         <?php if ($currentPage === 'index.php'): ?>
           <li><a href="logeo.php">Iniciar Sesión</a></li>
           <li><a href="registrarse.php">Registrarse</a></li>
 
+          <!-- REGISTRARSE -->
         <?php elseif ($currentPage === 'registrarse.php'): ?>
           <li><a href="index.php">Inicio</a></li>
           <li><a href="logeo.php">Iniciar Sesión</a></li>
 
+          <!-- LOGEO -->
         <?php elseif ($currentPage === 'logeo.php'): ?>
           <li><a href="index.php">Inicio</a></li>
           <li><a href="registrarse.php">Registrarse</a></li>
 
-          <?php elseif ($currentPage === 'olvide-contraseña.php'): ?>
+          <!-- OLVIDE CONTRASEÑA -->
+        <?php elseif ($currentPage === 'olvide_contrasenia.php'): ?>
           <li><a href="index.php">Inicio</a></li>
           <li><a href="registrarse.php">Registrarse</a></li>
 
+          <!-- NOMBRE, ROL, CERRAR SESION -->
         <?php elseif (in_array($currentPage, ['menu_principal.php', 'formacion_profesional.php', 'escuelas.php', 'personas.php', 'usuarios.php', 'registros.php', 'perfil.php'])): ?>
-          <!-- Si el usuario no está logueado, mostramos 'Perfil' sin nombre -->
+
           <li>
             <a href="perfil.php">
               <?= $displayName !== '' ? htmlspecialchars($displayName) : 'Perfil' ?><br>
@@ -54,9 +57,11 @@ $displayName = trim($personas_nombre . ' ' . $personas_apellido);
           </li>
           <li><a href="deslogeo.php">Cerrar Sesión</a></li>
 
+          <!-- ENLACE A INICIO -->
         <?php else: ?>
           <li><a href="index.php">Inicio</a></li>
         <?php endif; ?>
+
       </ul>
     </nav>
   </div>

@@ -1,11 +1,11 @@
 <?php
+// SESIÓN: NOMBRE E INICIALIZACION
 session_name();
 
-//AGREGUE ESE IF, SINO VA session_start(); SOLO
+//SI LA SESIÓN NO ESTA INICIADA, LA INICIAMOS
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
 
 //CONFIGURACION DE CONEXION A LA BASE DE DATOS
 $dbhost = "localhost";
@@ -17,7 +17,7 @@ $db = "seminario";
 $conexion = mysqli_connect($dbhost, $dbusuario, $dbpassword, $db);
 
 if (!$conexion) {
-	//SI NO SE PUEDO CONECTAR, MUESTRA UN MENSAJE CON JAVASCRIPT//
+	//SI NO SE PUEDO CONECTAR, MUESTRA UN MENSAJE CON JAVASCRIPT
 	echo "<script >	
 				alert('no se pudo conectar al sistema');
 				location.href ='index.php';
@@ -25,8 +25,8 @@ if (!$conexion) {
 	exit();
 }
 
-//CONFIGURACION DE HEADERS PARA EVITAR EL ALMACENAMIENTO EN CACHE
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0"); // Deshabilita el caché
-header("Cache-Control: post-check=0, pre-check=0", false); // Compatibilidad
-header("Pragma: no-cache"); // Deshabilita el caché HTTP 1.0
+//HEADER PARA EVITAR ALMACENAMIENTO EN CACHE POR PARTE DEL NAVEGADOR
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0"); // DESHABILITA EL CACHE
+header("Cache-Control: post-check=0, pre-check=0", false); // COMPATIBILIDAD
+header("Pragma: no-cache"); // DESHABILITA EL CACHE HTTP 1.0
 ?>

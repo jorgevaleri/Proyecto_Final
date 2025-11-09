@@ -1,18 +1,20 @@
 <?php
-// logeo.php - login con soporte de contraseñas en claro + rehaseo automático
+// INICIALIZACION CENTRAL
+require_once __DIR__ . '/includes/inicializar.php';
 
-if (session_status() === PHP_SESSION_NONE) session_start();
-include('../BackEnd/conexion.php'); // ajustá la ruta si hace falta
-
+// MENSAJE DE ERRORES
 $login_error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ingresar'])) {
     $usuarios_email = trim($_POST['usuarios_email'] ?? '');
     $usuarios_clave = $_POST['usuarios_clave'] ?? '';
 
+    // VALIDACION BASICA
     if ($usuarios_email === '' || $usuarios_clave === '') {
         $login_error = 'Complete email y contraseña.';
     } else {
-        // Buscamos el usuario (solo no eliminados)
+
+        // BUSCAR USUARIO
         $stmt = mysqli_prepare($conexion, "
             SELECT u.usuarios_id, u.usuarios_clave, u.usuarios_email, u.usuarios_rol,
                    p.personas_nombre, p.personas_apellido
@@ -26,26 +28,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ingresar'])) {
         mysqli_stmt_store_result($stmt);
 
         if (mysqli_stmt_num_rows($stmt) === 0) {
-            $login_error = "El e-mail {$usuarios_email} no existe.";
+
+            // CORREO NO ENCONTRADO
+            $login_error = "El e-mail " . htmlspecialchars($usuarios_email) . " no existe.";
             mysqli_stmt_close($stmt);
         } else {
+
+            // RECUPERAR DATOS
             mysqli_stmt_bind_result($stmt, $uid, $hash_db, $email_db, $rol_db, $p_nombre, $p_apellido);
             mysqli_stmt_fetch($stmt);
             mysqli_stmt_close($stmt);
 
             $login_ok = false;
 
-            // Detectar si la contraseña en DB parece un hash (bcrypt/argon)
+            // DETECTAR SI LA CONTRASEÑA EN LA BASE DE DATOS ESTA HASHEADA
             $is_hashed = (strpos($hash_db, '$2y$') === 0) || (strpos($hash_db, '$2a$') === 0) || (stripos($hash_db, 'argon') !== false);
 
             if ($is_hashed) {
-                // Comparación normal con password_verify
+
+                // COMPARAR CONTRASEÑA
                 if (password_verify($usuarios_clave, $hash_db)) $login_ok = true;
             } else {
-                // La contraseña está en claro en la DB -> comparamos directo
+
                 if ($usuarios_clave === $hash_db) {
                     $login_ok = true;
-                    // Re-hash y actualizar la DB para mejorar seguridad
                     $new_hash = password_hash($usuarios_clave, PASSWORD_DEFAULT);
                     $upd = mysqli_prepare($conexion, "UPDATE usuarios SET usuarios_clave = ? WHERE usuarios_id = ?");
                     mysqli_stmt_bind_param($upd, "si", $new_hash, $uid);
@@ -55,28 +61,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ingresar'])) {
             }
 
             if ($login_ok) {
-                // Función local para normalizar el rol de la BD a nuestros códigos
-                function normalize_role($r)
-                {
-                    $r = strtoupper(trim((string)$r));
-                    if (strpos($r, 'ADMIN') !== false || strpos($r, 'ADMINISTRADOR') !== false) return 'ADMIN';
-                    if (strpos($r, 'DIRECTOR') !== false) return 'DIRECTOR';
-                    // cubrir variantes: DOCENTE, PROFESOR, TEACHER...
-                    if (strpos($r, 'DOCENT') !== false || strpos($r, 'PROFESOR') !== false || strpos($r, 'TEACHER') !== false) return 'DOCENTE';
-                    // valor por defecto (evita null)
-                    return 'DOCENTE';
-                }
 
-                // Guardamos datos en sesión (manteniendo lo que ya tenías)
+                // GUARDA LOS DATOS EN SESION
                 $_SESSION['user_id'] = (int)$uid;
                 $_SESSION['usuarios_email'] = $email_db;
                 $_SESSION['personas_nombre'] = $p_nombre;
                 $_SESSION['personas_apellido'] = $p_apellido;
+                $_SESSION['personas_rol'] = $rol_db ?? 'DOCENTE';
+                $_SESSION['role'] = normalize_role($_SESSION['personas_rol']) ?? 'DOCENTE';
 
-                // guardamos BOTH: el valor tal cual (para mostrar) y el role estandarizado (para checks)
-                $_SESSION['personas_rol'] = $rol_db ?? 'DOCENTE';                  // valor original (para header)
-                $_SESSION['role'] = normalize_role($_SESSION['personas_rol']);     // valor estándar (ADMIN/DIRECTOR/DOCENTE)
-
+                // REDIRIGIR A LA PAGINA PRIVADA
                 header('Location: menu_principal.php');
                 exit;
             } else {
@@ -85,52 +79,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ingresar'])) {
         }
     }
 }
+
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
+
+<!-- HEAD -->
 <?php include('head.php'); ?>
 
-<!-- ESTILOS -->
-<link rel="stylesheet" href="CSS/style_common.css">
-<link rel="stylesheet" href="CSS/style_public.css">
-<script>
-    window.addEventListener('pageshow', function(event) {
-        if (event.persisted) {
-            window.location.href = 'deslogeo.php';
-            window.location.reload(true);
-        }
-    });
-</script>
+<!-- ESTILOS CSS -->
+<link rel="stylesheet" href="CSS/estilo_comun.css">
+<link rel="stylesheet" href="CSS/estilo_publico.css">
+
+<!-- HEADER -->
 <?php include('header.php'); ?>
 
-<body class="body">
+<body class="body login-page">
+    <!-- CONTENIDO PRINCIPAL DE LA PÁGINA -->
     <main class="cuerpo">
         <div class="content">
-            <?php if ($login_error): ?>
-                <p class="error" style="color:red; text-align:center;"><?= htmlspecialchars($login_error) ?></p>
-            <?php endif; ?>
+            <form id="form1" name="form1" method="post" novalidate>
 
-            <form id="form1" name="form1" method="post">
-                <h3 class="title">Iniciar Sesion</h3>
+                <!-- FORMULARIO DE INICIO DE SESIÓN -->
+                <h3 class="title">Iniciar Sesión</h3>
 
+                <!-- INPUT EMAIL -->
                 <div class="field">
                     <input name="usuarios_email" type="text" id="usuarios_email" required
                         value="<?= htmlspecialchars($_POST['usuarios_email'] ?? '') ?>">
-                    <span class="fas fa-user"></span>
-                    <label for="usuarios_email">Correo Electronico</label>
-                    <small class="error" id="error_email"></small>
+                    <span class="fas fa-user" aria-hidden="true"></span>
+                    <label for="usuarios_email">Correo Electrónico</label>
                 </div>
 
+                <!-- INPUT CONTRASEÑA -->
                 <div class="field password-field">
                     <input type="password" name="usuarios_clave" id="usuarios_clave" required>
-                    <i id="togglePassword" class="fas fa-eye-slash"></i>
-                    <span class="fas fa-lock"></span>
+                    <i id="togglePassword" class="fas fa-eye-slash" aria-hidden="true"></i>
+                    <span class="fas fa-lock" aria-hidden="true"></span>
                     <label for="usuarios_clave">Contraseña</label>
-                    <small class="error" id="error_clave"></small>
                 </div>
 
-                <br>
+                <!-- CONTENEDOR CENTRALIZADO PARA MENSAJES DE VALIDACIONES -->
+                <div id="login_validation_message" role="status" aria-live="polite">
+                    <?php if (!empty($login_error)): ?>
+                        <div class="server-error"><?= htmlspecialchars($login_error) ?></div>
+                    <?php endif; ?>
+                </div>
 
+                <!-- BOTONES / LINK -->
                 <div class="boton">
                     <input type="submit" name="ingresar" id="ingresar" value="Ingresar">
                 </div>
@@ -141,14 +138,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ingresar'])) {
                 </div>
 
                 <div class="forgot-pass">
-                    <a href="olvide-contraseña.php">Olvide la contraseña</a>
+                    <a href="olvide_contrasenia.php">Olvidé la contraseña</a>
                 </div>
             </form>
         </div>
     </main>
 
-    <script src="../BackEnd/logeo.js"></script>
+    <!-- SCRIPTS -->
+    <!-- VALIDACIONES -->
+    <script src="JS/validaciones_globales.js" defer></script>
+    <!-- FUNCIONES PARA LOGEARSE -->
+    <script src="JS/logeo.js" defer></script>
 </body>
+
+<!-- FOOTER -->
 <?php include('footer.php'); ?>
 
 </html>

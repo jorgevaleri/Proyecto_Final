@@ -1,134 +1,165 @@
 <?php
-session_start();
+// INICIALIZACION CENTRAL
+require_once __DIR__ . '/includes/inicializar.php';
 
-// Evitar cache después del logout
+// EVITAR QUE EL NAVEGADOR MUESTRE PAGINAS DESDE CACHE
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 header('Expires: 0');
 
-// Comprobar login
+// COMPROBAR LOGEO
 if (empty($_SESSION['user_id'])) {
   header('Location: index.php', true, 303);
   exit;
 }
 
-// Incluir helpers y conexion (require_once para evitar redeclare)
-require_once __DIR__ . '/auth_helpers.php';
-require_once __DIR__ . '/../BackEnd/conexion.php';
-
-// Permitir sólo usuarios con rol (ADMIN, DIRECTOR, DOCENTE)
-require_role_view(['ADMIN','DIRECTOR','DOCENTE']);
+// PERMITIR SOLO USUARIOS CON ROL
+require_role_view(['ADMIN', 'DIRECTOR', 'DOCENTE']);
 $role = current_role();
 
+// INICIAR BUFFER DE SALIDA
 ob_start();
-include('head.php');
-include('header.php');
-include('menu_lateral.php');
 
-// 1) Secciones disponibles y mapeo
-$allowed = ['todos','directores','docentes','alumnos'];
+// SECCIONES DISPONEBLES Y MAPEO
+$allowed = ['todos', 'directores', 'docentes', 'alumnos'];
 $tipo    = $_GET['tipo'] ?? 'todos';
 if (!in_array($tipo, $allowed)) $tipo = 'todos';
 
 $map = [
-  'todos'      => ['titulo'=>'Todos',      'sql'=>"i.personas_id IS NOT NULL"],
-  'directores' => ['titulo'=>'Directores', 'sql'=>"i.institucional_tipo='Director'"],
-  'docentes'   => ['titulo'=>'Docentes',   'sql'=>"i.institucional_tipo='Docente'"],
-  'alumnos'    => ['titulo'=>'Alumnos',    'sql'=>"i.institucional_tipo='Alumno'"]
+  'todos'      => ['titulo' => 'Todos',      'sql' => "i.personas_id IS NOT NULL"],
+  'directores' => ['titulo' => 'Directores', 'sql' => "i.institucional_tipo='Director'"],
+  'docentes'   => ['titulo' => 'Docentes',   'sql' => "i.institucional_tipo='Docente'"],
+  'alumnos'    => ['titulo' => 'Alumnos',    'sql' => "i.institucional_tipo='Alumno'"]
 ];
 $title = $map[$tipo]['titulo'];
 $where = $map[$tipo]['sql'];
 
-// --- Si el usuario es DOCENTE: limitar mapa y forzar 'alumnos' ----
+// SI EL USUARIO ES DOCENTE
 if (is_docente()) {
-    // dejamos solamente la vista "alumnos" y forzamos tipo
-    $map = [
-      'alumnos' => ['titulo' => 'Alumnos', 'sql' => "i.institucional_tipo='Alumno'"]
-    ];
-    $tipo = 'alumnos';
-    $title = $map[$tipo]['titulo'];
+  $map = [
+    'alumnos' => ['titulo' => 'Alumnos', 'sql' => "i.institucional_tipo='Alumno'"]
+  ];
+  $tipo = 'alumnos';
+  $title = $map[$tipo]['titulo'];
 }
 
-// --- Si es DIRECTOR: mostrar solo Docentes y Alumnos en el submenu ----
+// SI EL USUARIO ES DIRECTOR
 if (is_director()) {
-    $map = [
-      'docentes' => ['titulo' => 'Docentes', 'sql' => "i.institucional_tipo='Docente'"],
-      'alumnos'  => ['titulo' => 'Alumnos',  'sql' => "i.institucional_tipo='Alumno'"]
-    ];
-    // Si el tipo actual no está en el nuevo mapa, forzamos uno por defecto
-    if (!isset($map[$tipo])) {
-        $tipo = 'docentes';
-        $title = $map[$tipo]['titulo'];
-    }
+  $map = [
+    'docentes' => ['titulo' => 'Docentes', 'sql' => "i.institucional_tipo='Docente'"],
+    'alumnos'  => ['titulo' => 'Alumnos',  'sql' => "i.institucional_tipo='Alumno'"]
+  ];
+  if (!isset($map[$tipo])) {
+    $tipo = 'docentes';
+    $title = $map[$tipo]['titulo'];
+  }
 }
 
-// --- Para DIRECTOR: obtener la escuela donde está registrado (si es director) ---
+// PARA DIRECTOR OBTENER ESCUELA DE REGISTRO
 $director_escuela_id = 0;
 if (is_director()) {
-    $user_id = (int)($_SESSION['user_id'] ?? 0);
-    $personas_id = (int)($_SESSION['personas_id'] ?? 0);
+  $user_id = (int)($_SESSION['user_id'] ?? 0);
+  $personas_id = (int)($_SESSION['personas_id'] ?? 0);
 
-    if (!$personas_id && $user_id) {
-        $q = mysqli_query($conexion, "SELECT personas_id FROM usuarios WHERE usuarios_id = {$user_id} LIMIT 1");
-        if ($q && mysqli_num_rows($q)) $personas_id = (int)mysqli_fetch_assoc($q)['personas_id'];
-    }
+  if (!$personas_id && $user_id) {
+    $q = mysqli_query($conexion, "SELECT personas_id FROM usuarios WHERE usuarios_id = {$user_id} LIMIT 1");
+    if ($q && mysqli_num_rows($q)) $personas_id = (int)mysqli_fetch_assoc($q)['personas_id'];
+  }
 
-    if ($personas_id) {
-        $q2 = mysqli_query($conexion, "SELECT escuelas_id FROM institucional WHERE personas_id = {$personas_id} LIMIT 1");
-        if ($q2 && mysqli_num_rows($q2)) $director_escuela_id = (int)mysqli_fetch_assoc($q2)['escuelas_id'];
-    }
+  if ($personas_id) {
+    $q2 = mysqli_query($conexion, "SELECT escuelas_id FROM institucional WHERE personas_id = {$personas_id} LIMIT 1");
+    if ($q2 && mysqli_num_rows($q2)) $director_escuela_id = (int)mysqli_fetch_assoc($q2)['escuelas_id'];
+  }
 }
 
-// 2) Acción e ID
+// ACCION E ID
 $action = $_GET['action'] ?? 'list';
 $id     = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $error  = '';
 
-// ----------------- ACCIONES: permisos de servidor -----------------
+// INICIALIZAR VARIABLES
+$p = null;
+$doms = [];
+$tels = [];
+$inst = null;
 
-// DELETE: sólo ADMIN puede entrar aquí (tanto GET confirm como POST)
+// ELIMINAR, SOLO ADMINISTRADOR
 if ($action === 'delete' && $id) {
-  require_role_action(['ADMIN']); // <-- SOLO ADMIN
+  require_role_action(['ADMIN']);
 
-  // Cargar datos para mostrar en confirmación
+  // MOSTRAR CONFIRMACION
   $p    = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM personas WHERE personas_id=$id"));
-  $doms = mysqli_query($conexion, "SELECT * FROM domicilios WHERE personas_id=$id");
-  $tels = mysqli_query($conexion, "SELECT * FROM telefonos   WHERE personas_id=$id");
+  $doms_q = mysqli_query($conexion, "SELECT * FROM domicilios WHERE personas_id=$id");
+  $tels_q = mysqli_query($conexion, "SELECT * FROM telefonos   WHERE personas_id=$id");
+  $doms = $doms_q ? mysqli_fetch_all($doms_q, MYSQLI_ASSOC) : [];
+  $tels = $tels_q ? mysqli_fetch_all($tels_q, MYSQLI_ASSOC) : [];
 
+  // MARCAMOS COMO ELIMINADO
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['confirm']) && $_POST['confirm'] === 'yes') {
       mysqli_query($conexion, "UPDATE personas SET personas_eliminado=1 WHERE personas_id=$id")
         or die(mysqli_error($conexion));
+      header("Location: personas.php?tipo=" . urlencode($tipo) . "&deleted=1");
+      exit;
+    } else {
+      header("Location: personas.php?tipo=" . urlencode($tipo));
+      exit;
     }
-    header("Location: personas.php?tipo=$tipo");
-    exit;
   }
 }
 
-// RESTORE: sólo ADMIN
+// RESTAURAR, SOLO ADMINISTRADOR
 if ($action === 'restore' && $id) {
-  require_role_action(['ADMIN']); // <-- SOLO ADMIN
+  require_role_action(['ADMIN']);
   mysqli_query($conexion, "UPDATE personas SET personas_eliminado=0 WHERE personas_id=$id");
-  header("Location: personas.php?tipo=$tipo");
+  header("Location: personas.php?tipo=" . urlencode($tipo) . "&restored=1");
   exit;
 }
 
-// VIEW: detalle persona (ADMIN, DIRECTOR, DOCENTE) -> ya cubierto por require_role_view arriba
+// VER, DETALLE DE PERSONA
 if ($action === 'view' && $id) {
-  // Datos Personales
+
+  // DATOS PERSONALES
   $p    = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM personas WHERE personas_id=$id"));
-  // Domicilios
-  $doms = mysqli_query($conexion, "SELECT * FROM domicilios WHERE personas_id=$id");
-  // Telefonos
-  $tels = mysqli_query($conexion, "SELECT * FROM telefonos   WHERE personas_id=$id");
-  // Datos Institucionales
+
+  // DOMICILIOS
+  $doms_q = mysqli_query($conexion, "SELECT * FROM domicilios WHERE personas_id=$id");
+  $doms = $doms_q ? mysqli_fetch_all($doms_q, MYSQLI_ASSOC) : [];
+
+  // TELEFONOS
+  $tels_q = mysqli_query($conexion, "SELECT * FROM telefonos   WHERE personas_id=$id");
+  $tels = $tels_q ? mysqli_fetch_all($tels_q, MYSQLI_ASSOC) : [];
+
+  // INSTITUCIONAL
   $inst = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM institucional WHERE personas_id=$id LIMIT 1"));
+
+  // SI NO HAY PREDETERMINADO SE MARCA EL PRIMERO
+  if (is_array($doms) && count($doms) > 0) {
+    $hasPred = false;
+    foreach ($doms as $dd) {
+      if (!empty($dd['domicilios_predeterminado'])) {
+        $hasPred = true;
+        break;
+      }
+    }
+    if (!$hasPred) $doms[0]['domicilios_predeterminado'] = 1;
+  }
+
+  if (is_array($tels) && count($tels) > 0) {
+    $hasPred = false;
+    foreach ($tels as $tt) {
+      if (!empty($tt['telefonos_predeterminado'])) {
+        $hasPred = true;
+        break;
+      }
+    }
+    if (!$hasPred) $tels[0]['telefonos_predeterminado'] = 1;
+  }
 }
 
-// LIST o DELETED
+// LISTA / ELIMINADOS
 if ($action === 'list' || $action === 'deleted') {
-  // Base de la consulta: LEFT JOIN para incluir personas sin registro institucional
   $sql = "
     SELECT
       p.personas_id,
@@ -142,9 +173,7 @@ if ($action === 'list' || $action === 'deleted') {
     WHERE p.personas_eliminado = " . ($action === 'list' ? '0' : '1') . "
   ";
 
-  // Si no es 'todos', agregamos filtro por tipo institucional
   if ($tipo !== 'todos') {
-    // Mapeo URL → valor real en la BD
     $mapTipo = [
       'directores' => 'Director',
       'docentes'   => 'Docente',
@@ -154,34 +183,34 @@ if ($action === 'list' || $action === 'deleted') {
     $sql .= " AND i.institucional_tipo = '" . mysqli_real_escape_string($conexion, $f) . "'";
   }
 
-  // Si es DIRECTOR y estamos mostrando 'docentes', limitamos por su escuela
+  // SI ES DIRECTOR, MOSTRAMOS DOCENTES PERTENECIENTES A LA ESCUELA
   if (is_director() && $tipo === 'docentes' && !empty($director_escuela_id)) {
-      $sql .= " AND i.escuelas_id = " . (int)$director_escuela_id;
+    $sql .= " AND i.escuelas_id = " . (int)$director_escuela_id;
   }
 
-  // Ordenamos siempre por ID
+  // ORDENAMOS POR ID
   $sql .= " ORDER BY p.personas_id";
 
-  // Ejecutamos
   $res = mysqli_query($conexion, $sql) or die(mysqli_error($conexion));
 }
 
-// ADD & EDIT: sólo ADMIN y DOCENTE pueden crear o editar
+// AGREGAR / EDITAR, SOLO ADMINISTRADOR Y DOCENTE
 if (in_array($action, ['add', 'edit'])) {
-  require_role_action(['ADMIN','DOCENTE']); // <-- ADMIN y DOCENTE pueden acceder aquí
+  require_role_action(['ADMIN', 'DOCENTE']);
 
-  // Cargamos select institucional
+  // CARGAMOS DATOS
   $escuelas   = mysqli_query($conexion, "SELECT escuelas_id, escuelas_nombre FROM escuelas WHERE escuelas_eliminado=0 ORDER BY escuelas_nombre");
+
   $formaciones = mysqli_query($conexion, "SELECT formaciones_profesionales_id, formaciones_profesionales_nombre FROM formaciones_profesionales WHERE formaciones_profesionales_eliminado=0 ORDER BY formaciones_profesionales_nombre");
 
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Datos personales (sanitizar)
-    $ape = mysqli_real_escape_string($conexion, $_POST['personas_apellido']);
-    $nom = mysqli_real_escape_string($conexion, $_POST['personas_nombre']);
-    $dni = mysqli_real_escape_string($conexion, $_POST['personas_dni']);
-    $fn  = mysqli_real_escape_string($conexion, $_POST['personas_fechnac']);
-    $sex = mysqli_real_escape_string($conexion, $_POST['personas_sexo']);
+    $ape = mysqli_real_escape_string($conexion, $_POST['personas_apellido'] ?? '');
+    $nom = mysqli_real_escape_string($conexion, $_POST['personas_nombre'] ?? '');
+    $dni = mysqli_real_escape_string($conexion, $_POST['personas_dni'] ?? '');
+    $fn  = mysqli_real_escape_string($conexion, $_POST['personas_fechnac'] ?? '');
+    $sex = mysqli_real_escape_string($conexion, $_POST['personas_sexo'] ?? '');
 
+    // INSERTAR PERSONA
     if ($action === 'add') {
       mysqli_query(
         $conexion,
@@ -189,6 +218,8 @@ if (in_array($action, ['add', 'edit'])) {
          VALUES ('$ape','$nom','$dni','$fn','$sex')"
       ) or die(mysqli_error($conexion));
       $persona_id = mysqli_insert_id($conexion);
+
+      // ACTUALIZAR PERSONA
     } else {
       mysqli_query(
         $conexion,
@@ -205,9 +236,10 @@ if (in_array($action, ['add', 'edit'])) {
       mysqli_query($conexion, "DELETE FROM telefonos   WHERE personas_id=$id");
     }
 
-    // Domicilios
+    // DOMICILIOS
     $pd = $_POST['domicilios_predeterminado'] ?? 0;
-    foreach ($_POST['domicilios_calle'] as $i => $calle) {
+    $doms_calle = $_POST['domicilios_calle'] ?? [];
+    foreach ($doms_calle as $i => $calle) {
       $c  = mysqli_real_escape_string($conexion, $calle);
       $d  = mysqli_real_escape_string($conexion, $_POST['domicilios_descripcion'][$i] ?? '');
       $la = mysqli_real_escape_string($conexion, $_POST['domicilios_latitud'][$i] ?? '');
@@ -220,9 +252,10 @@ if (in_array($action, ['add', 'edit'])) {
       ) or die(mysqli_error($conexion));
     }
 
-    // Teléfonos
+    // TELEFONOS
     $pt = $_POST['telefonos_predeterminado'] ?? 0;
-    foreach ($_POST['telefonos_numero'] as $i => $num) {
+    $telefonos_numero = $_POST['telefonos_numero'] ?? [];
+    foreach ($telefonos_numero as $i => $num) {
       $n  = mysqli_real_escape_string($conexion, $num);
       $d  = mysqli_real_escape_string($conexion, $_POST['telefonos_descripcion'][$i] ?? '');
       $pr = ($i == (int)$pt) ? 1 : 0;
@@ -233,14 +266,14 @@ if (in_array($action, ['add', 'edit'])) {
       ) or die(mysqli_error($conexion));
     }
 
-    // --- Institucional ---
+    // INSTITUCIONAL
     mysqli_query($conexion, "DELETE FROM institucional WHERE personas_id=$persona_id")
       or die(mysqli_error($conexion));
 
-    $inst_tipo = mysqli_real_escape_string($conexion, $_POST['inst_tipo']);
+    $inst_tipo = mysqli_real_escape_string($conexion, $_POST['inst_tipo'] ?? '');
 
     if ($inst_tipo === 'Director') {
-      $inst_esc = (int) $_POST['inst_escuela'];
+      $inst_esc = (int) ($_POST['inst_escuela'] ?? 0);
       $sqlInst = "
       INSERT INTO institucional 
         (institucional_tipo, escuelas_id, personas_id)
@@ -248,8 +281,8 @@ if (in_array($action, ['add', 'edit'])) {
         ('$inst_tipo', $inst_esc, $persona_id)
     ";
     } elseif ($inst_tipo === 'Docente') {
-      $inst_esc  = (int) $_POST['inst_escuela'];
-      $inst_form = (int) $_POST['inst_formacion'];
+      $inst_esc  = (int) ($_POST['inst_escuela'] ?? 0);
+      $inst_form = (int) ($_POST['inst_formacion'] ?? 0);
       $sqlInst = "
       INSERT INTO institucional 
         (institucional_tipo, escuelas_id, formaciones_profesionales_id, personas_id)
@@ -269,185 +302,250 @@ if (in_array($action, ['add', 'edit'])) {
 
     if ($sqlInst) mysqli_query($conexion, $sqlInst) or die(mysqli_error($conexion));
 
-    header("Location: personas.php?tipo=$tipo");
+    $saved_mode = ($action === 'add') ? 'add' : 'edit';
+    header("Location: personas.php?tipo=" . urlencode($tipo) . "&saved=1&mode=" . urlencode($saved_mode));
     exit;
   }
 
+  // EDITAR, SOLO ADMINISTRADOR Y DOCENTE
   if ($action === 'edit' && $id) {
-    // Sólo ADMIN y DOCENTE pueden abrir el formulario de edición
-    require_role_action(['ADMIN','DOCENTE']);
+    require_role_action(['ADMIN', 'DOCENTE']);
     $p    = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM personas WHERE personas_id=$id"));
-    $doms = mysqli_fetch_all(mysqli_query($conexion, "SELECT * FROM domicilios WHERE personas_id=$id"), MYSQLI_ASSOC);
-    $tels = mysqli_fetch_all(mysqli_query($conexion, "SELECT * FROM telefonos   WHERE personas_id=$id"), MYSQLI_ASSOC);
+    $doms_q = mysqli_query($conexion, "SELECT * FROM domicilios WHERE personas_id=$id");
+    $tels_q = mysqli_query($conexion, "SELECT * FROM telefonos   WHERE personas_id=$id");
+    $doms = $doms_q ? mysqli_fetch_all($doms_q, MYSQLI_ASSOC) : [];
+    $tels = $tels_q ? mysqli_fetch_all($tels_q, MYSQLI_ASSOC) : [];
     $inst = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM institucional WHERE personas_id=$id LIMIT 1"));
+
+    if (is_array($doms) && count($doms) > 0) {
+      $hasPred = false;
+      foreach ($doms as $dd) {
+        if (!empty($dd['domicilios_predeterminado'])) {
+          $hasPred = true;
+          break;
+        }
+      }
+      if (!$hasPred) $doms[0]['domicilios_predeterminado'] = 1;
+    }
+    if (is_array($tels) && count($tels) > 0) {
+      $hasPred = false;
+      foreach ($tels as $tt) {
+        if (!empty($tt['telefonos_predeterminado'])) {
+          $hasPred = true;
+          break;
+        }
+      }
+      if (!$hasPred) $tels[0]['telefonos_predeterminado'] = 1;
+    }
   }
 }
 
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 
-<head>
-  <meta charset="UTF-8">
-  <title>Personas</title>
+<!-- HEAD -->
+<?php include('head.php'); ?>
 
-  <!-- ESTILOS -->
-  <link rel="stylesheet" href="CSS/style_common.css">
-  <link rel="stylesheet" href="CSS/style_app.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-  <script defer src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<!-- HEADER -->
+<?php include('header.php'); ?>
 
-</head>
+<!-- ESTILOS CSS -->
+<link rel="stylesheet" href="CSS/estilo_comun.css">
+<link rel="stylesheet" href="CSS/estilo_app.css">
+
+<!-- MENU LATERAL -->
+<?php include('menu_lateral.php'); ?>
 
 <body>
   <main class="fp-page">
 
-    <h1>Personas</h1>
-   <nav>
-      <?php if (is_docente()): ?>
-        <!-- DOCENTE: solo ver Alumnos -->
-        <a href="personas.php?tipo=alumnos" <?= 'alumnos' === $tipo ? 'style="font-weight:bold"' : '' ?>>
-          <?= htmlspecialchars($map['alumnos']['titulo']) ?>
-        </a>
-      <?php else: ?>
-        <!-- ADMIN / otros: menú completo -->
-        <?php foreach ($map as $key => $cfg): ?>
-          <a href="personas.php?tipo=<?= $key ?>" <?= $key === $tipo ? 'style="font-weight:bold"' : '' ?>>
-            <?= htmlspecialchars($cfg['titulo']) ?>
+    <?php
+    if ($action === 'list'):
+    ?>
+      <h1 class="title">Personas</h1>
+
+      <nav>
+        <!-- DOCENTE, SOLO VE ALUMNOS -->
+        <?php if (is_docente()): ?>
+          <a href="personas.php?tipo=alumnos" class="<?= 'alumnos' === $tipo ? 'active' : '' ?>">
+            <?= htmlspecialchars($map['alumnos']['titulo']) ?>
           </a>
-        <?php endforeach; ?>
-      <?php endif; ?>
-    </nav>
+        <?php else: ?>
+          <!-- ADMINISTRADOR, MENU COMPLETO -->
+          <?php foreach ($map as $key => $cfg): ?>
+            <a href="personas.php?tipo=<?= $key ?>" class="<?= $key === $tipo ? 'active' : '' ?>">
+              <?= htmlspecialchars($cfg['titulo']) ?>
+            </a>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </nav>
+    <?php else: ?>
+      <?php
+      // TITULOS DESCRIPTIVOS
+      $heading = 'Personas';
+      if ($action === 'add') $heading = 'Agregar Persona';
+      if ($action === 'edit') $heading = isset($p) ? 'Editar Persona: ' . htmlspecialchars($p['personas_apellido'] . ', ' . $p['personas_nombre']) : 'Editar Persona';
+      if ($action === 'view') $heading = isset($p) ? 'Ver Persona: ' . htmlspecialchars($p['personas_apellido'] . ', ' . $p['personas_nombre']) : 'Ver Persona';
+      if ($action === 'delete') $heading = isset($p) ? 'Eliminar Persona: ' . htmlspecialchars($p['personas_apellido'] . ', ' . $p['personas_nombre']) : 'Eliminar Persona';
+      if ($action === 'deleted') $heading = 'Personas Eliminadas';
+      ?>
+      <h1 class="title"><?= $heading ?></h1>
+    <?php endif; ?>
 
+    <!-- VER -->
     <?php if ($action === 'view' && $id): ?>
-      <!-- VIEW: permitido para ADMIN, DIRECTOR, DOCENTE -->
-      <h2>Datos Personales</h2>
-      <p><strong>Apellido:</strong> <?= htmlspecialchars($p['personas_apellido']) ?></p>
-      <p><strong>Nombre:</strong> <?= htmlspecialchars($p['personas_nombre']) ?></p>
-      <p><strong>DNI:</strong> <?= htmlspecialchars($p['personas_dni']) ?></p>
-      <p><strong>Fecha Nac.:</strong> <?= htmlspecialchars($p['personas_fechnac']) ?></p>
-      <p><strong>Sexo:</strong> <?= htmlspecialchars($p['personas_sexo']) ?></p>
+      <div class="view-panel">
 
-      <h2>Domicilios</h2>
-      <?php while ($d = mysqli_fetch_assoc($doms)): ?>
-        <div>
-          <p><strong>Dirección:</strong> <?= htmlspecialchars($d['domicilios_calle']) ?></p>
-          <p><strong>Descripción:</strong> <?= htmlspecialchars($d['domicilios_descripcion']) ?></p>
-          <p><strong>Predeterminado:</strong> <?= $d['domicilios_predeterminado'] ? 'Sí' : 'No' ?></p>
-          <p><strong>Ubicación:</strong> <?= htmlspecialchars($d['domicilios_latitud']) . ", " . htmlspecialchars($d['domicilios_longitud']) ?></p>
-          <?php if ($d['domicilios_latitud'] && $d['domicilios_longitud']): ?>
-            <iframe width="100%" height="200" frameborder="0" style="border:0"
-              src="https://maps.google.com/maps?q=<?= $d['domicilios_latitud'] ?>,<?= $d['domicilios_longitud'] ?>&z=15&output=embed"
-              loading="lazy"></iframe>
-          <?php endif; ?>
+        <!-- DATOS PERSONALES -->
+        <h3>Datos Personales</h3>
+        <div class="row">
+          <label>Apellido
+            <input value="<?= htmlspecialchars($p['personas_apellido'] ?? '') ?>" disabled>
+          </label>
+
+          <label>Nombre
+            <input value="<?= htmlspecialchars($p['personas_nombre'] ?? '') ?>" disabled>
+          </label>
         </div>
-      <?php endwhile; ?>
 
-      <h2>Teléfonos</h2>
-      <?php while ($t = mysqli_fetch_assoc($tels)): ?>
-        <div>
-          <p><strong>Teléfono:</strong> <?= htmlspecialchars($t['telefonos_numero']) ?></p>
-          <p><strong>Descripción:</strong> <?= htmlspecialchars($t['telefonos_descripcion']) ?></p>
-          <p><strong>Predeterminado:</strong> <?= $t['telefonos_predeterminado'] ? 'Sí' : 'No' ?></p>
+        <div class="row">
+          <label>DNI
+            <input value="<?= htmlspecialchars($p['personas_dni'] ?? '') ?>" disabled>
+          </label>
+
+          <label>Fecha Nac.
+            <input type="date" value="<?= htmlspecialchars($p['personas_fechnac'] ?? '') ?>" disabled>
+          </label>
+
+          <label>Sexo
+            <input value="<?= htmlspecialchars($p['personas_sexo'] ?? '') ?>" disabled>
+          </label>
         </div>
-      <?php endwhile; ?>
 
-      <h2>Institucional</h2>
-      <?php if (!empty($inst)): ?>
-        <p><strong>Tipo:</strong> <?= htmlspecialchars($inst['institucional_tipo']) ?></p>
-        <p><strong>Escuela:</strong> <?php
-                                      $esc = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT escuelas_nombre FROM escuelas WHERE escuelas_id=" . (int)$inst['escuelas_id']));
-                                      echo htmlspecialchars($esc['escuelas_nombre']);
-                                      ?></p>
-        <?php if ($inst['formaciones_profesionales_id']): ?>
-          <p><strong>Formación:</strong> <?php
-                                          $fo = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT formaciones_profesionales_nombre FROM formaciones_profesionales WHERE formaciones_profesionales_id=" . (int)$inst['formaciones_profesionales_id']));
-                                          echo htmlspecialchars($fo['formaciones_profesionales_nombre']);
-                                          ?></p><?php endif; ?>
-      <?php else: ?>
-        <p>No hay datos institucionales.</p>
-      <?php endif; ?>
-
-      <p><a href="personas.php?tipo=<?= $tipo ?>">Volver al listado</a></p>
-
-    <?php elseif ($action === 'edit' || $action === 'add'): ?>
-      <!-- ADD/EDIT: sólo ADMIN y DOCENTE pueden ver este formulario -->
-      <h2><?= $action === 'edit' ? 'Editar' : 'Agregar' ?> Persona</h2>
-      <form method="post">
-        <label>Apellido:<br>
-          <input name="personas_apellido" required value="<?= htmlspecialchars($p['personas_apellido'] ?? '') ?>">
-        </label><br>
-        <label>Nombre:<br>
-          <input name="personas_nombre" required value="<?= htmlspecialchars($p['personas_nombre'] ?? '') ?>">
-        </label><br>
-        <label>DNI:<br>
-          <input name="personas_dni" required value="<?= htmlspecialchars($p['personas_dni'] ?? '') ?>">
-        </label><br>
-        <label>Fecha Nac.:<br>
-          <input type="date" name="personas_fechnac" required value="<?= htmlspecialchars($p['personas_fechnac'] ?? '') ?>">
-        </label><br>
-        <label>Sexo:<br>
-          <select name="personas_sexo" required>
-            <option value="">--</option>
-            <option value="Masculino" <?= (isset($p['personas_sexo']) && $p['personas_sexo'] == 'Masculino') ? 'selected' : '' ?>>Masculino</option>
-            <option value="Femenino" <?= (isset($p['personas_sexo']) && $p['personas_sexo'] == 'Femenino') ? 'selected' : '' ?>>Femenino</option>
-          </select>
-        </label><br>
-        
         <!-- DOMICILIOS -->
         <h3>Domicilios</h3>
-        <button type="button" id="addDom">Agregar domicilio</button>
-        <div id="doms">
-          <?php foreach (($doms ?? []) as $i => $d): ?>
-            <div class="dom-block">
-              <?php if ($i > 0): ?>
-                <button type="button" class="del-dom">❌</button>
-              <?php endif; ?>
-              <label>
-                Calle y número<br>
-                <input name="domicilios_calle[]" placeholder="Calle y número" required
-                  value="<?= htmlspecialchars($d['domicilios_calle']) ?>">
-              </label>
-              <label>
-                Descripción<br>
-                <input name="domicilios_descripcion[]" placeholder="Descripción"
-                  value="<?= htmlspecialchars($d['domicilios_descripcion']) ?>">
-              </label>
-              <label>
-                Predeterminado
-                <input type="radio" name="domicilios_predeterminado" value="<?= $i ?>"
-                  <?= $d['domicilios_predeterminado'] ? 'checked' : '' ?>>
-              </label>
-              <label>
-                Buscar dirección<br>
-                <input class="map-search" placeholder="Buscar dirección">
-              </label>
-              <button type="button" class="btn-search">Buscar</button>
-              <div class="map" style="height:150px;"></div>
-              <input type="hidden" name="domicilios_latitud[]" value="<?= htmlspecialchars($d['domicilios_latitud']) ?>">
-              <input type="hidden" name="domicilios_longitud[]" value="<?= htmlspecialchars($d['domicilios_longitud']) ?>">
-            </div>
-          <?php endforeach; ?>
+        <div class="blocks">
+          <?php if (!empty($doms) && is_array($doms)): ?>
+            <?php foreach ($doms as $d): ?>
+              <div class="dom-block">
+                <label>Calle y número<br><input value="<?= htmlspecialchars($d['domicilios_calle'] ?? '') ?>" disabled></label>
+                <label>Descripción<br><input value="<?= htmlspecialchars($d['domicilios_descripcion'] ?? '') ?>" disabled></label>
+                <label>Predeterminado<br><input value="<?= (!empty($d['domicilios_predeterminado']) ? 'Sí' : 'No') ?>" disabled></label>
+                <?php if (!empty($d['domicilios_latitud']) && !empty($d['domicilios_longitud'])): ?>
+                  <div class="map" style="height:150px;">
+                    <iframe width="100%" height="150" frameborder="0" style="border:0"
+                      src="https://maps.google.com/maps?q=<?= rawurlencode($d['domicilios_latitud']) ?>,<?= rawurlencode($d['domicilios_longitud']) ?>&z=15&output=embed"
+                      loading="lazy"></iframe>
+                  </div>
+                <?php endif; ?>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p>No hay domicilios registrados.</p>
+          <?php endif; ?>
+        </div>
 
-          <?php if (empty($doms)): ?>
+        <!-- TELEFONOS -->
+        <h3>Teléfonos</h3>
+        <div class="blocks">
+          <?php if (!empty($tels) && is_array($tels)): ?>
+            <?php foreach ($tels as $t): ?>
+              <div class="tel-block">
+                <label>Número<br><input value="<?= htmlspecialchars($t['telefonos_numero'] ?? '') ?>" disabled></label>
+                <label>Descripción<br><input value="<?= htmlspecialchars($t['telefonos_descripcion'] ?? '') ?>" disabled></label>
+                <label>Predeterminado<br><input value="<?= (!empty($t['telefonos_predeterminado']) ? 'Sí' : 'No') ?>" disabled></label>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p>No hay teléfonos registrados.</p>
+          <?php endif; ?>
+        </div>
+
+        <!-- INSTITUCIONAL -->
+        <h3>Institucional</h3>
+        <?php if (!empty($inst)): ?>
+          <div class="row">
+            <label>Tipo de Persona<br><input value="<?= htmlspecialchars($inst['institucional_tipo']) ?>" disabled></label>
+            <?php if (!empty($inst['escuelas_id'])):
+              $esc = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT escuelas_nombre FROM escuelas WHERE escuelas_id=" . (int)$inst['escuelas_id']));
+            ?>
+              <label>Escuela<br><input value="<?= htmlspecialchars($esc['escuelas_nombre'] ?? '') ?>" disabled></label>
+            <?php endif; ?>
+            <?php if (!empty($inst['formaciones_profesionales_id'])):
+              $fo = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT formaciones_profesionales_nombre FROM formaciones_profesionales WHERE formaciones_profesionales_id=" . (int)$inst['formaciones_profesionales_id']));
+            ?>
+              <label>Formación<br><input value="<?= htmlspecialchars($fo['formaciones_profesionales_nombre'] ?? '') ?>" disabled></label>
+            <?php endif; ?>
+          </div>
+        <?php else: ?>
+          <p>No hay datos institucionales.</p>
+        <?php endif; ?>
+
+        <p style="margin-top:12px;">
+          <a href="personas.php?tipo=<?= $tipo ?>" class="pill">Volver al listado</a>
+        </p>
+      </div>
+
+      <!-- EDITAR / AGREGAR -->
+    <?php elseif ($action === 'edit' || $action === 'add'): ?>
+      <form id="personForm" method="post" novalidate>
+
+        <!-- DATOS PERSONALES -->
+        <h3>Datos Personales</h3>
+
+        <div class="row">
+          <label>Apellido
+            <input name="personas_apellido" id="personas_apellido" value="<?= htmlspecialchars($p['personas_apellido'] ?? '') ?>">
+          </label>
+
+          <label>Nombre
+            <input name="personas_nombre" id="personas_nombre" value="<?= htmlspecialchars($p['personas_nombre'] ?? '') ?>">
+          </label>
+        </div>
+
+        <div class="row">
+          <label>DNI
+            <input name="personas_dni" id="personas_dni" value="<?= htmlspecialchars($p['personas_dni'] ?? '') ?>">
+          </label>
+
+          <label>Fecha Nac.
+            <input type="date" name="personas_fechnac" id="personas_fechnac" value="<?= htmlspecialchars($p['personas_fechnac'] ?? '') ?>">
+          </label>
+
+          <label>Sexo
+            <select name="personas_sexo" id="personas_sexo">
+              <option value="">--</option>
+              <option value="Masculino" <?= (isset($p['personas_sexo']) && $p['personas_sexo'] == 'Masculino') ? 'selected' : '' ?>>Masculino</option>
+              <option value="Femenino" <?= (isset($p['personas_sexo']) && $p['personas_sexo'] == 'Femenino') ? 'selected' : '' ?>>Femenino</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- DOMICILIOS -->
+        <h3>Domicilios</h3>
+        <div id="doms" class="blocks">
+          <?php if (!empty($doms) && is_array($doms)): ?>
+            <?php foreach ($doms as $i => $d): ?>
+              <div class="dom-block">
+                <?php if ($i > 0): ?><button type="button" class="del-dom">❌</button><?php endif; ?>
+                <label>Calle y número<br><input name="domicilios_calle[]" placeholder="Calle y número" value="<?= htmlspecialchars($d['domicilios_calle'] ?? '') ?>"></label>
+                <label>Descripción<br><input name="domicilios_descripcion[]" placeholder="Descripción" value="<?= htmlspecialchars($d['domicilios_descripcion'] ?? '') ?>"></label>
+                <label>Predeterminado <input type="radio" name="domicilios_predeterminado" value="<?= $i ?>" <?= (!empty($d['domicilios_predeterminado']) ? 'checked' : '') ?>></label>
+                <label>Buscar dirección<br><input class="map-search" placeholder="Buscar dirección"></label>
+                <button type="button" class="btn-search">Buscar</button>
+                <div class="map" style="height:150px;"></div>
+                <input type="hidden" name="domicilios_latitud[]" value="<?= htmlspecialchars($d['domicilios_latitud'] ?? '') ?>">
+                <input type="hidden" name="domicilios_longitud[]" value="<?= htmlspecialchars($d['domicilios_longitud'] ?? '') ?>">
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
             <div class="dom-block">
-              <!-- no ❌ en el primero -->
-              <label>
-                Calle y número<br>
-                <input name="domicilios_calle[]" placeholder="Calle y número" required>
-              </label>
-              <label>
-                Descripción<br>
-                <input name="domicilios_descripcion[]" placeholder="Descripción">
-              </label>
-              <label>
-                Predeterminado
-                <input type="radio" name="domicilios_predeterminado" value="0" checked>
-              </label>
-              <label>
-                Buscar dirección<br>
-                <input class="map-search" placeholder="Buscar dirección">
-              </label>
+              <label>Calle y número<br><input name="domicilios_calle[]" placeholder="Calle y número"></label>
+              <label>Descripción<br><input name="domicilios_descripcion[]" placeholder="Descripción"></label>
+              <label>Predeterminado <input type="radio" name="domicilios_predeterminado" value="0" checked></label>
+              <label>Buscar dirección<br><input class="map-search" placeholder="Buscar dirección"></label>
               <button type="button" class="btn-search">Buscar</button>
               <div class="map" style="height:150px;"></div>
               <input type="hidden" name="domicilios_latitud[]">
@@ -456,362 +554,324 @@ if (in_array($action, ['add', 'edit'])) {
           <?php endif; ?>
         </div>
 
+        <button type="button" id="addDom" class="pill">Agregar otro Domicilio</button>
+
         <!-- TELÉFONOS -->
         <h3>Teléfonos</h3>
-        <button type="button" id="addTel">Agregar teléfono</button>
-        <div id="tels">
-          <?php foreach (($tels ?? []) as $i => $t): ?>
+        <div id="tels" class="blocks">
+          <?php if (!empty($tels) && is_array($tels)): ?>
+            <?php foreach ($tels as $i => $t): ?>
+              <div class="tel-block">
+                <?php if ($i > 0): ?><button type="button" class="del-tel">❌</button><?php endif; ?>
+                <label>Número<br><input name="telefonos_numero[]" placeholder="Número" value="<?= htmlspecialchars($t['telefonos_numero'] ?? '') ?>"></label>
+                <label>Descripción<br><input name="telefonos_descripcion[]" placeholder="Descripción" value="<?= htmlspecialchars($t['telefonos_descripcion'] ?? '') ?>"></label>
+                <label>Predeterminado <input type="radio" name="telefonos_predeterminado" value="<?= $i ?>" <?= (!empty($t['telefonos_predeterminado']) ? 'checked' : '') ?>></label>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
             <div class="tel-block">
-              <?php if ($i > 0): ?>
-                <button type="button" class="del-tel">❌</button>
-              <?php endif; ?>
-              <label>
-                Número<br>
-                <input name="telefonos_numero[]" placeholder="Número" required
-                  value="<?= htmlspecialchars($t['telefonos_numero']) ?>">
-              </label>
-              <label>
-                Descripción<br>
-                <input name="telefonos_descripcion[]" placeholder="Descripción"
-                  value="<?= htmlspecialchars($t['telefonos_descripcion']) ?>">
-              </label>
-              <label>
-                Predeterminado
-                <input type="radio" name="telefonos_predeterminado" value="<?= $i ?>"
-                  <?= $t['telefonos_predeterminado'] ? 'checked' : '' ?>>
-              </label>
-            </div>
-          <?php endforeach; ?>
-
-          <?php if (empty($tels)): ?>
-            <div class="tel-block">
-              <!-- no ❌ en el primero -->
-              <label>
-                Número<br>
-                <input name="telefonos_numero[]" placeholder="Número" required>
-              </label>
-              <label>
-                Descripción<br>
-                <input name="telefonos_descripcion[]" placeholder="Descripción">
-              </label>
-              <label>
-                Predeterminado
-                <input type="radio" name="telefonos_predeterminado" value="0" checked>
-              </label>
+              <label>Número<br><input name="telefonos_numero[]" placeholder="Número"></label>
+              <label>Descripción<br><input name="telefonos_descripcion[]" placeholder="Descripción"></label>
+              <label>Predeterminado <input type="radio" name="telefonos_predeterminado" value="0" checked></label>
             </div>
           <?php endif; ?>
         </div>
 
-        <!-- Institucional -->
-        <h3>Institucional</h3>
+        <button type="button" id="addTel" class="pill">Agregar otro Teléfono</button>
 
+        <!-- INSTITUCIONAL -->
+        <h3>Institucional</h3>
         <?php if (is_docente()): ?>
-          <!-- Si es DOCENTE: no mostramos select, forzamos Alumno -->
           <input type="hidden" name="inst_tipo" value="Alumno">
           <p><strong>Tipo de Persona:</strong> Alumno</p>
         <?php else: ?>
-          <label>
-            Tipo de Persona:<br>
-            <select name="inst_tipo" id="inst_tipo" required>
-              <option value="">--</option>
-              <option value="Director" <?= (isset($inst['institucional_tipo']) && $inst['institucional_tipo'] == 'Director') ? 'selected' : '' ?>>Director</option>
-              <option value="Docente" <?= (isset($inst['institucional_tipo']) && $inst['institucional_tipo'] == 'Docente') ? 'selected' : '' ?>>Docente</option>
-              <option value="Alumno" <?= (isset($inst['institucional_tipo']) && $inst['institucional_tipo'] == 'Alumno') ? 'selected' : '' ?>>Alumno</option>
-            </select>
-          </label><br>
+          <div class="row">
+            <label>Tipo de Persona
+              <select name="inst_tipo" id="inst_tipo">
+                <option value="">--</option>
+                <option value="Director" <?= (isset($inst['institucional_tipo']) && $inst['institucional_tipo'] == 'Director') ? 'selected' : '' ?>>Director</option>
+                <option value="Docente" <?= (isset($inst['institucional_tipo']) && $inst['institucional_tipo'] == 'Docente') ? 'selected' : '' ?>>Docente</option>
+                <option value="Alumno" <?= (isset($inst['institucional_tipo']) && $inst['institucional_tipo'] == 'Alumno') ? 'selected' : '' ?>>Alumno</option>
+              </select>
+            </label>
+
+            <label id="label_escuela">Escuela
+              <select name="inst_escuela" id="inst_escuela">
+                <option value="">--</option>
+                <?php if (isset($escuelas)) {
+                  mysqli_data_seek($escuelas, 0);
+                  while ($e = mysqli_fetch_assoc($escuelas)): ?>
+                    <option value="<?= $e['escuelas_id'] ?>" <?= (isset($inst['escuelas_id']) && $inst['escuelas_id'] == $e['escuelas_id']) ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($e['escuelas_nombre']) ?>
+                    </option>
+                <?php endwhile;
+                } ?>
+              </select>
+            </label>
+
+            <label id="label_formacion">Formación Profesional
+              <select name="inst_formacion" id="inst_formacion">
+                <option value="">--</option>
+                <?php if (isset($formaciones)) {
+                  mysqli_data_seek($formaciones, 0);
+                  while ($f = mysqli_fetch_assoc($formaciones)): ?>
+                    <option value="<?= $f['formaciones_profesionales_id'] ?>" <?= (isset($inst['formaciones_profesionales_id']) && $inst['formaciones_profesionales_id'] == $f['formaciones_profesionales_id']) ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($f['formaciones_profesionales_nombre']) ?>
+                    </option>
+                <?php endwhile;
+                } ?>
+              </select>
+            </label>
+          </div>
         <?php endif; ?>
 
-         <?php if (!is_docente()): ?>
-        <label id="label_escuela">
-          Escuela:<br>
-          <select name="inst_escuela" id="inst_escuela">
-            <option value="">--</option>
-            <?php if (isset($escuelas)) { mysqli_data_seek($escuelas, 0); while ($e = mysqli_fetch_assoc($escuelas)): ?>
-              <option value="<?= $e['escuelas_id'] ?>" <?= (isset($inst['escuelas_id']) && $inst['escuelas_id'] == $e['escuelas_id']) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($e['escuelas_nombre']) ?>
-              </option>
-            <?php endwhile; } ?>
-          </select>
-        </label><br>
-
-        <label id="label_formacion">
-          Formación Profesional:<br>
-          <select name="inst_formacion" id="inst_formacion">
-            <option value="">--</option>
-            <?php if (isset($formaciones)) { mysqli_data_seek($formaciones, 0); while ($f = mysqli_fetch_assoc($formaciones)): ?>
-              <option value="<?= $f['formaciones_profesionales_id'] ?>" <?= (isset($inst['formaciones_profesionales_id']) && $inst['formaciones_profesionales_id'] == $f['formaciones_profesionales_id']) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($f['formaciones_profesionales_nombre']) ?>
-              </option>
-            <?php endwhile; } ?>
-          </select>
-        </label><br>
-        <?php endif; ?>
-
-        <button type="submit"><?= $action === 'edit' ? 'Guardar cambios' : 'Guardar' ?></button>
-        <a href="personas.php?tipo=<?= $tipo ?>">Cancelar</a>
+        <div class="actions">
+          <button type="submit" class="pill primary"><?= $action === 'edit' ? 'Guardar cambios' : 'Guardar' ?></button>
+          <a href="personas.php?tipo=<?= $tipo ?>" class="pill">Cancelar</a>
+        </div>
       </form>
 
     <?php elseif ($action === 'delete' && $id): ?>
-      <!-- DELETE: sólo ADMIN (ya verificado en servidor) -->
+
+      <!-- ELIMINAR -->
       <h2>Confirmar Eliminación</h2>
-      <p>¿Deseas eliminar esta persona y sus datos?</p>
-      <form method="post">
-        <button type="submit" name="confirm" value="yes">Sí, eliminar</button>
-        <button type="submit" name="confirm" value="no">Cancelar</button>
+      <p>¿Deseas eliminar esta persona y sus datos? Verifica la información a continuación antes de confirmar.</p>
+
+      <form method="post" style="margin-top:12px;" novalidate>
+        <div class="delete-actions" style="margin-bottom:16px;">
+          <button type="submit" name="confirm" value="yes" class="pill primary">Sí, eliminar</button>
+          <button type="submit" name="confirm" value="no" class="pill">Cancelar</button>
+        </div>
       </form>
+
       <hr>
-      <!-- Mostrar datos como en VIEW -->
-      <h3>Datos Personales</h3>
-      <p><strong>Apellido:</strong> <?= htmlspecialchars($p['personas_apellido']) ?></p>
-      <p><strong>Nombre:</strong> <?= htmlspecialchars($p['personas_nombre']) ?></p>
-      <p><strong>DNI:</strong> <?= htmlspecialchars($p['personas_dni']) ?></p>
-      <p><strong>Fecha Nac.:</strong> <?= htmlspecialchars($p['personas_fechnac']) ?></p>
-      <p><strong>Sexo:</strong> <?= htmlspecialchars($p['personas_sexo']) ?></p>
-      <h3>Domicilios</h3>
-      <?php while ($d = mysqli_fetch_assoc($doms)): ?>
-        <p><?= htmlspecialchars($d['domicilios_calle']) ?> (<?= htmlspecialchars($d['domicilios_descripcion']) ?>) <?= $d['domicilios_predeterminado'] ? '[Pred]' : '' ?></p>
-      <?php endwhile; ?>
-      <h3>Teléfonos</h3>
-      <?php while ($t = mysqli_fetch_assoc($tels)): ?>
-        <p><?= htmlspecialchars($t['telefonos_numero']) ?> (<?= htmlspecialchars($t['telefonos_descripcion']) ?>) <?= $t['telefonos_predeterminado'] ? '[Pred]' : '' ?></p>
-      <?php endwhile; ?>
+      <div class="view-panel">
+        <h3>Datos Personales</h3>
+
+        <div class="row">
+          <label>Apellido
+            <input value="<?= htmlspecialchars($p['personas_apellido'] ?? '') ?>" disabled>
+          </label>
+
+          <label>Nombre
+            <input value="<?= htmlspecialchars($p['personas_nombre'] ?? '') ?>" disabled>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>DNI
+            <input value="<?= htmlspecialchars($p['personas_dni'] ?? '') ?>" disabled>
+          </label>
+
+          <label>Fecha Nac.
+            <input type="date" value="<?= htmlspecialchars($p['personas_fechnac'] ?? '') ?>" disabled>
+          </label>
+
+          <label>Sexo
+            <input value="<?= htmlspecialchars($p['personas_sexo'] ?? '') ?>" disabled>
+          </label>
+        </div>
+
+        <h3>Domicilios</h3>
+        <div class="blocks">
+          <?php if (!empty($doms) && is_array($doms)): ?>
+            <?php foreach ($doms as $d): ?>
+              <div class="dom-block">
+                <label>Calle y número<br><input value="<?= htmlspecialchars($d['domicilios_calle'] ?? '') ?>" disabled></label>
+                <label>Descripción<br><input value="<?= htmlspecialchars($d['domicilios_descripcion'] ?? '') ?>" disabled></label>
+                <label>Predeterminado<br><input value="<?= (!empty($d['domicilios_predeterminado']) ? 'Sí' : 'No') ?>" disabled></label>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p>No hay domicilios registrados.</p>
+          <?php endif; ?>
+        </div>
+
+        <h3>Teléfonos</h3>
+        <div class="blocks">
+          <?php if (!empty($tels) && is_array($tels)): ?>
+            <?php foreach ($tels as $t): ?>
+              <div class="tel-block">
+                <label>Número<br><input value="<?= htmlspecialchars($t['telefonos_numero'] ?? '') ?>" disabled></label>
+                <label>Descripción<br><input value="<?= htmlspecialchars($t['telefonos_descripcion'] ?? '') ?>" disabled></label>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p>No hay teléfonos registrados.</p>
+          <?php endif; ?>
+        </div>
+
+        <h3>Institucional</h3>
+        <?php if (!empty($inst)): ?>
+          <div class="row">
+            <label>Tipo de Persona<br><input value="<?= htmlspecialchars($inst['institucional_tipo']) ?>" disabled></label>
+            <?php if (!empty($inst['escuelas_id'])):
+              $esc = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT escuelas_nombre FROM escuelas WHERE escuelas_id=" . (int)$inst['escuelas_id']));
+            ?>
+              <label>Escuela<br><input value="<?= htmlspecialchars($esc['escuelas_nombre'] ?? '') ?>" disabled></label>
+            <?php endif; ?>
+            <?php if (!empty($inst['formaciones_profesionales_id'])):
+              $fo = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT formaciones_profesionales_nombre FROM formaciones_profesionales WHERE formaciones_profesionales_id=" . (int)$inst['formaciones_profesionales_id']));
+            ?>
+              <label>Formación<br><input value="<?= htmlspecialchars($fo['formaciones_profesionales_nombre'] ?? '') ?>" disabled></label>
+            <?php endif; ?>
+          </div>
+        <?php else: ?>
+          <p>No hay datos institucionales.</p>
+        <?php endif; ?>
+
+      </div>
 
     <?php else: ?>
 
-
       <!-- LISTADO -->
-        <p>
-        <?php if (is_admin() || is_docente()): ?>
-          <a href="personas.php?action=add&tipo=<?= $tipo ?>">Agregar Persona</a>
+      <ul class="botones">
+        <?php if ($action === 'list' && (is_admin() || is_docente())):
+        ?>
+          <li class="boton-agregar"><a href="personas.php?action=add&tipo=<?= $tipo ?>"><i class="bi bi-plus-circle"></i> Agregar</a></li>
         <?php endif; ?>
 
         <?php if ($action === 'list'): ?>
-          <?php if (is_admin()): // SOLO ADMIN VE "Mostrar Eliminados" ?>
-            | <a href="personas.php?action=deleted&tipo=<?= $tipo ?>">Mostrar Eliminados</a>
+
+          <!-- MOSTRAR ELIMINADOS, SOLO ADMINISTRADOR -->
+          <?php if (is_admin()):
+          ?>
+            <li class="boton-volver"><a href="personas.php?action=deleted&tipo=<?= $tipo ?>"><i class="bi bi-eye-slash"></i> Mostrar Eliminados</a></li>
           <?php endif; ?>
         <?php else: ?>
-          | <a href="personas.php?tipo=<?= $tipo ?>">Volver a Activos</a>
+          <li class="boton-volver"><a href="personas.php?tipo=<?= $tipo ?>"><i class="bi bi-arrow-left-circle"></i> Volver al Listado</a></li>
         <?php endif; ?>
-      </p>
+      </ul>
 
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Apellido</th>
-            <th>Nombre</th>
-            <th>DNI</th>
-            <th>Tipo</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php $cnt = 0;
-          while ($r = mysqli_fetch_assoc($res)): ?>
+      <div class="contenedor">
+        <table class="table table-striped table-hover">
+          <thead>
             <tr>
-              <td><?= ++$cnt ?></td>
-              <td><?= htmlspecialchars($r['personas_apellido']) ?></td>
-              <td><?= htmlspecialchars($r['personas_nombre']) ?></td>
-              <td><?= htmlspecialchars($r['personas_dni']) ?></td>
-              <td><?= htmlspecialchars($r['institucional_tipo'] ?? '—') ?></td>
-              <td>
-                <?php if ($action === 'list'): ?>
-                  <a href="personas.php?action=view&id=<?= $r['personas_id'] ?>&tipo=<?= $tipo ?>">Ver más</a>
-                  <?php if (is_admin() || is_docente()): ?>
-                    | <a href="personas.php?action=edit&id=<?= $r['personas_id'] ?>&tipo=<?= $tipo ?>">Editar</a>
-                  <?php endif; ?>
-                  <?php if (is_admin()): ?>
-                    | <a href="personas.php?action=delete&id=<?= $r['personas_id'] ?>&tipo=<?= $tipo ?>">Eliminar</a>
-                  <?php endif; ?>
-
-                <?php elseif ($action === 'deleted'): ?>
-                  <?php if (is_admin()): ?>
-                    <a href="personas.php?action=restore&id=<?= $r['personas_id'] ?>&tipo=<?= $tipo ?>">Restaurar</a>
-                  <?php else: ?>
-                    <!-- Si no es admin, no mostramos acciones en eliminados -->
-                    -
-                  <?php endif; ?>
-                <?php endif; ?>
-              </td>
+              <th>#</th>
+              <th>Apellido</th>
+              <th>Nombre</th>
+              <th>DNI</th>
+              <th>Tipo</th>
+              <th>Acciones</th>
             </tr>
-          <?php endwhile; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php $cnt = 0;
+            while ($r = mysqli_fetch_assoc($res)): ?>
+              <tr>
+                <td><?= ++$cnt ?></td>
+                <td class="text-left"><?= htmlspecialchars($r['personas_apellido']) ?></td>
+                <td class="text-left"><?= htmlspecialchars($r['personas_nombre']) ?></td>
+                <td><?= htmlspecialchars($r['personas_dni']) ?></td>
+                <td><?= htmlspecialchars($r['institucional_tipo'] ?? '—') ?></td>
+                <td>
+                  <?php if ($action === 'list'): ?>
+                    <a href="personas.php?action=view&id=<?= $r['personas_id'] ?>&tipo=<?= $tipo ?>" title="Ver Más" class="accion"><i class="bi bi-eye"></i></a>
+                    <?php if (is_admin() || is_docente()): ?>
+                      <a href="personas.php?action=edit&id=<?= $r['personas_id'] ?>&tipo=<?= $tipo ?>" title="Editar" class="accion"><i class="bi bi-pencil"></i></a>
+                    <?php endif; ?>
+                    <?php if (is_admin()): ?>
+                      <a href="personas.php?action=delete&id=<?= $r['personas_id'] ?>&tipo=<?= $tipo ?>" title="Eliminar" class="accion"><i class="bi bi-trash3" style="color:#c0392b;"></i></a>
+                    <?php endif; ?>
+
+                  <?php elseif ($action === 'deleted'): ?>
+                    <?php if (is_admin()): ?>
+                      <a href="personas.php?action=restore&id=<?= $r['personas_id'] ?>&tipo=<?= $tipo ?>" title="Restaurar" class="accion"><i class="bi bi-arrow-counterclockwise"></i></a>
+                    <?php else: ?>
+                      -
+                    <?php endif; ?>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endwhile; ?>
+          </tbody>
+        </table>
+      </div>
+
     <?php endif; ?>
 
   </main>
+
+  <!-- FOOTER -->
   <?php include('footer.php'); ?>
 
+  <?php
+  // ENDPOINTS ABSOLUTOS QUE USA JS
+  $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+  $host = $_SERVER['HTTP_HOST'];
+  $dir = dirname($_SERVER['SCRIPT_NAME']);
+  if ($dir === '/' || $dir === '\\') $dir = '';
+  $geocodeEndpoint = $scheme . '://' . $host . $dir . '/registrarse.php?action=geocode';
+  $checkDniEndpoint = $scheme . '://' . $host . $dir . '/registrarse.php?action=check_dni';
+  ?>
+
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Asegurar un solo radio predeterminado por grupo
-      function fixRadios(groupName) {
-        document.querySelectorAll(`input[name="${groupName}"]`).forEach(radio => {
-          radio.addEventListener('change', () => {
-            /* el browser desmarca los demás */
-          });
-        });
-      }
-      fixRadios('domicilios_predeterminado');
-      fixRadios('telefonos_predeterminado');
-
-      // === DOMICILIOS ===
-      const doms = document.getElementById('doms'),
-        baseDom = doms.querySelector('.dom-block'),
-        btnDom = document.getElementById('addDom');
-
-      function initDom(block, idx) {
-        // Eliminar bloque secundario
-        const delBtn = block.querySelector('.del-dom');
-        if (delBtn) delBtn.addEventListener('click', () => block.remove());
-
-        // Elementos de geocoding
-        const mapEl = block.querySelector('.map'),
-          search = block.querySelector('.map-search'),
-          btnSearch = block.querySelector('.btn-search'),
-          latInput = block.querySelector('input[name="domicilios_latitud[]"]'),
-          lngInput = block.querySelector('input[name="domicilios_longitud[]"]');
-
-        mapEl.innerHTML = '';
-        const map = L.map(mapEl).setView([-28.4682, -65.7795], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        const marker = L.marker(map.getCenter(), {
-            draggable: true
-          })
-          .addTo(map)
-          .on('moveend', e => {
-            const {
-              lat,
-              lng
-            } = e.target.getLatLng();
-            latInput.value = lat;
-            lngInput.value = lng;
-            console.log('Marcador movido a:', lat, lng);
-          });
-
-        marker.on('move', e => {
-          console.log('Durante move:', e.latlng.lat, e.latlng.lng);
-        });
-
-        // Centrar si ya hay coords
-        if (latInput.value && lngInput.value) {
-          const la = parseFloat(latInput.value),
-            lo = parseFloat(lngInput.value);
-          marker.setLatLng([la, lo]);
-          map.setView([la, lo], 15);
-        }
-
-        // Búsqueda con botón
-        btnSearch.addEventListener('click', () => {
-          const q = search.value.trim();
-          if (!q) return alert('Ingresa una dirección');
-          fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`)
-            .then(r => r.json()).then(data => {
-              if (!data[0]) return alert('Dirección no encontrada');
-              const la = parseFloat(data[0].lat),
-                lo = parseFloat(data[0].lon);
-              marker.setLatLng([la, lo]);
-              map.setView([la, lo], 15);
-              latInput.value = la;
-              lngInput.value = lo;
-              console.log('Coordenadas encontradas:', la, lo);
-            })
-            .catch(() => alert('Error al buscar en el mapa'));
-        });
-      }
-
-      // Inicializar todos los bloques al cargar
-      doms.querySelectorAll('.dom-block').forEach((blk, i) => initDom(blk, i));
-
-      // Clonar domicilio
-      btnDom.addEventListener('click', () => {
-        const idx = doms.children.length;
-        const clone = baseDom.cloneNode(true);
-
-        // limpiar valores
-        clone.querySelectorAll('input:not([type="radio"])').forEach(i => i.value = '');
-        clone.querySelector('input[type="radio"]').value = idx;
-
-        // si no existe aún, añadimos el botón de eliminar
-        if (!clone.querySelector('.del-dom')) {
-          const del = document.createElement('button');
-          del.type = 'button';
-          del.className = 'del-dom';
-          del.textContent = '❌';
-          clone.insertBefore(del, clone.firstChild);
-        }
-
-        doms.appendChild(clone);
-        initDom(clone, idx);
+    // VARIABLES QUE JS UTILIZARA
+    window.GEOCODE_ENDPOINT = <?= json_encode($geocodeEndpoint, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+    window.CHECK_DNI_ENDPOINT = <?= json_encode($checkDniEndpoint, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('form').forEach(function(f) {
+        f.setAttribute('novalidate', 'novalidate');
       });
-
-
-
-      // === TELÉFONOS ===
-      const tels = document.getElementById('tels'),
-        baseTel = tels.querySelector('.tel-block'),
-        btnTel = document.getElementById('addTel');
-
-      function initTel(block, idx) {
-        const delBtn = block.querySelector('.del-tel');
-        if (delBtn) delBtn.addEventListener('click', () => block.remove());
-        // los radios de teléfonos mantienen por sí mismos la exclusividad
-      }
-
-      // Inicializar existentes
-      tels.querySelectorAll('.tel-block').forEach((blk, i) => initTel(blk, i));
-
-      // Clonar teléfono
-      btnTel.addEventListener('click', () => {
-        const idx = tels.children.length;
-        const clone = baseTel.cloneNode(true);
-
-        clone.querySelectorAll('input:not([type="radio"])').forEach(i => i.value = '');
-        clone.querySelector('input[type="radio"]').value = idx;
-
-        if (!clone.querySelector('.del-tel')) {
-          const del = document.createElement('button');
-          del.type = 'button';
-          del.className = 'del-tel';
-          del.textContent = '❌';
-          clone.insertBefore(del, clone.firstChild);
-        }
-
-        tels.appendChild(clone);
-        initTel(clone, idx);
-      });
-
-      // INSTITUCIONAL
-      const tipoSel = document.getElementById('inst_tipo');
-      const escuelaLab = document.getElementById('label_escuela');
-      const formacionLab = document.getElementById('label_formacion');
-
-      function toggleInstitucional() {
-        const val = tipoSel.value;
-        if (val === 'Director') {
-          escuelaLab.style.display = 'block';
-          formacionLab.style.display = 'none';
-        } else if (val === 'Docente') {
-          escuelaLab.style.display = 'block';
-          formacionLab.style.display = 'block';
-        } else if (val === 'Alumno') {
-          escuelaLab.style.display = 'none';
-          formacionLab.style.display = 'none';
-        } else {
-          // valor vacío: ocultar ambos
-          escuelaLab.style.display = 'none';
-          formacionLab.style.display = 'none';
-        }
-      }
-      tipoSel.addEventListener('change', toggleInstitucional);
-      toggleInstitucional(); // inicializa al cargar
-
     });
   </script>
+
+  <?php
+  $saved = isset($_GET['saved']) ? (int)$_GET['saved'] : 0;
+  $saved_mode = $_GET['mode'] ?? '';
+  $deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
+  $restored = isset($_GET['restored']) ? (int)$_GET['restored'] : 0;
+  if ($saved || $deleted || $restored):
+  ?>
+
+    <!-- SWEETALERT2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        <?php if ($saved):
+          $msg = ($saved_mode === 'add') ? 'Persona agregada correctamente.' : 'Cambios guardados correctamente.';
+        ?>
+          Swal.fire({
+            icon: 'success',
+            title: 'Guardado',
+            text: <?= json_encode($msg) ?>,
+            confirmButtonText: 'Aceptar',
+            allowOutsideClick: false
+          }).then(function() {
+            window.location.href = 'personas.php?tipo=<?= rawurlencode($tipo) ?>';
+          });
+        <?php elseif ($deleted): ?>
+          Swal.fire({
+            icon: 'success',
+            title: 'Eliminado',
+            text: 'La persona fue eliminada correctamente.',
+            confirmButtonText: 'Aceptar',
+            allowOutsideClick: false
+          }).then(function() {
+            window.location.href = 'personas.php?tipo=<?= rawurlencode($tipo) ?>';
+          });
+        <?php elseif ($restored): ?>
+          Swal.fire({
+            icon: 'success',
+            title: 'Restaurado',
+            text: 'La persona fue restaurada correctamente.',
+            confirmButtonText: 'Aceptar',
+            allowOutsideClick: false
+          }).then(function() {
+            window.location.href = 'personas.php?tipo=<?= rawurlencode($tipo) ?>';
+          });
+        <?php endif; ?>
+      });
+    </script>
+  <?php endif; ?>
+
+  <!-- SCRIPTS -->
+  <script src="JS/personas.js" defer></script>
+  <script src="JS/validaciones_personas.js" defer></script>
 </body>
 
 </html>
+
+<!-- ENVIAMOS BUFFER AL CLIENTE -->
 <?php ob_end_flush(); ?>
