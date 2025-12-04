@@ -396,7 +396,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['accion'] ?? '') === 'guarda
         $inaMuj = 0;
         $inaTot = 0;
 
-        // CARGAR DATOS DE LOS ALUMNOS
+        // CARGAR DATOS DE LOS ALUMNOS (SOLO ALUMNOS CURSANDO)
         $sqlAl = "
           SELECT p.personas_sexo
           FROM inscripciones_alumnos ia
@@ -404,6 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['accion'] ?? '') === 'guarda
          WHERE ia.escuelas_id={$escuela_id}
            AND ia.formaciones_profesionales_id={$form_id}
            AND ia.anio_ingreso={$anio}
+           AND ia.estado = 'CURSANDO'
          ORDER BY p.personas_apellido
         ";
         $resAl = mysqli_query($conexion, $sqlAl);
@@ -840,17 +841,35 @@ $escuelas = mysqli_query(
 
                         // ENTRADAS POR MES
                         $sqlEntr = "
-                            SELECT MONTH(ia.fecha_ingreso) AS mes,
-                                    SUM(p.personas_sexo='Masculino') AS asi_va,
-                                    SUM(p.personas_sexo='Femenino')  AS asi_mu,
-                                    COUNT(*)                        AS asi_to
-                                FROM inscripciones_alumnos ia
-                                JOIN personas p ON p.personas_id = ia.personas_id
+                           SELECT MONTH(ia.fecha_ingreso) AS mes,
+                                SUM(p.personas_sexo='Masculino') AS asi_va,
+                                SUM(p.personas_sexo='Femenino') AS asi_mu,
+                                COUNT(*) AS asi_to
+                            FROM inscripciones_alumnos ia
+                            JOIN personas p ON p.personas_id = ia.personas_id
                             WHERE ia.fecha_ingreso IS NOT NULL
-                            {$filters_sql}
+                                {$filters_sql}
+                            AND ia.fecha_ingreso > '" . mysqli_real_escape_string($conexion, $fecha_min) . "'
                             GROUP BY MONTH(ia.fecha_ingreso)
-                            ";
+                        ";
                         $resEntr = mysqli_query($conexion, $sqlEntr);
+
+                        // POBLAR EL ARRAY DE ENTRADAS
+                       $entradas = [];
+                       if ($resEntr) {
+                        mysqli_data_seek($resEntr, 0);
+                        while ($r = mysqli_fetch_assoc($resEntr)) {
+                            $mes = (int)$r['mes'];
+                            $entradas[$mes] = [
+                                'asi_va' => (int)$r['asi_va'],
+                                'asi_mu' => (int)$r['asi_mu'],
+                                'asi_to' => (int)$r['asi_to']
+                            ];
+                       }
+                       } else {
+                           // REGISTRAR EL ERROR PARA DEBUG
+                        error_log("SQL Entradas error: " . mysqli_error($conexion));
+                       }
 
                         // SALIDAS POR MES
                         $sqlSal = "
@@ -873,10 +892,54 @@ $escuelas = mysqli_query(
                         }
 
                         // CARGAR TABLA DE MOVIMIENTOS
+                        // ASEGURA QUE ENTRADA Y SALIDAS ESTEN CARGADOS (SINO LOS RELLENA)
+                        $entradas = $entradas ?? [];
+                        $salidas = $salidas ?? [];
+
+                        // SI $resEntr y $resSal EXISTEN Y NO ESTAN CARGADOS ANTES, SE INTENTA CARGAR
+                        if (!empty($resEntr) && empty($entradas)) {
+                            mysqli_data_seek($resEntr, 0);
+                            while ($r = mysqli_fetch_assoc($resEntr)) {
+                                $mes = (int)$r['mes'];
+                                $entradas[$mes] = [
+                                    'asi_va' => (int)$r['asi_va'],
+                                    'asi_mu' => (int)$r['asi_mu'],
+                                    'asi_to' => (int)$r['asi_to']
+                                ];
+                            }
+                        }
+                        if (!empty($resSal) && empty($salidas)) {
+                            mysqli_data_seek($resSal, 0);
+                            while ($r = mysqli_fetch_assoc($resSal)) {
+                                $mes = (int)$r['mes'];
+                                $salidas[$mes] = [
+                                    'ina_va' => (int)$r['ina_va'],
+                                    'ina_mu' => (int)$r['ina_mu'],
+                                    'ina_to' => (int)$r['ina_to']
+                                ];
+                            }
+                        }
+
+                        // INICIALES: alumnos al 1° día (ya deberían estar calculados arriba como $varones y $mujeres)
+                        $initial_va = isset($varones) ? (int)$varones : 0;
+                        $initial_mu = isset($mujeres) ? (int)$mujeres : 0;
+                        $initial_to = $initial_va + $initial_mu;
+
+                        // VARIABLES ACUMULADAS
+                        $running_va = $initial_va;
+                        $running_mu = $initial_mu;
+                        $running_to = $initial_to;
+
                         $mov_insc = [];
                         for ($m = 1; $m <= 12; $m++) {
                             $e = $entradas[$m] ?? ['asi_va' => 0, 'asi_mu' => 0, 'asi_to' => 0];
                             $s = $salidas[$m]  ?? ['ina_va' => 0, 'ina_mu' => 0, 'ina_to' => 0];
+
+                            // ACTUALIZAR ACUMULADO (ENTRADOS - SALIDOS)
+                            $running_va += (int)$e['asi_va'] - (int)$s['ina_va'];
+                            $running_mu += (int)$e['asi_mu'] - (int)$s['ina_mu'];
+                            $running_to = $running_va + $running_mu;
+
                             $mov_insc[$m] = [
                                 'asi_va' => (int)$e['asi_va'],
                                 'asi_mu' => (int)$e['asi_mu'],
@@ -884,9 +947,9 @@ $escuelas = mysqli_query(
                                 'ina_va' => (int)$s['ina_va'],
                                 'ina_mu' => (int)$s['ina_mu'],
                                 'ina_to' => (int)$s['ina_to'],
-                                'q_va'  => (int)$e['asi_va'] - (int)$s['ina_va'],
-                                'q_mu'  => (int)$e['asi_mu'] - (int)$s['ina_mu'],
-                                'q_to'  => (int)$e['asi_to'] - (int)$s['ina_to'],
+                                'q_va'   => $running_va,
+                                'q_mu'   => $running_mu,
+                                'q_to'   => $running_to
                             ];
                         }
 
@@ -1265,6 +1328,7 @@ $escuelas = mysqli_query(
                             WHERE ia.escuelas_id={$escuela_id}
                                 AND ia.formaciones_profesionales_id={$form_id}
                                 AND ia.anio_ingreso={$anio}
+                                AND ia.estado='CURSANDO'
                             ORDER BY p.personas_apellido
                             ";
 
